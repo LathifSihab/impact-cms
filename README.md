@@ -41,7 +41,7 @@ npm run dev                         # http://localhost:5273
 | | |
 |---|---|
 | Public site | http://localhost:5273/ and `/en` — no login |
-| Backoffice | http://localhost:5273/**admin** |
+| Backoffice | `http://localhost:5273/admin` |
 
 Do **not** `cp .env.example .env`. That template ships with empty values, so the
 copy leaves you configured with nothing — and running it a second time silently

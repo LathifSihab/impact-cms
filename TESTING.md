@@ -95,7 +95,7 @@ The app is on **http://localhost:5273**.
 | What | Where | Login |
 |---|---|---|
 | **The public site** — `/events` and `/journal`, rendered live from the database. What a visitor sees. | http://localhost:5273/ and `/en` | none |
-| **The backoffice dashboard** — tiles and the consent list. What the client edits. | http://localhost:5273/**admin** | `demo@wemakeimpact.be` / `backoffice-demo-2026` |
+| **The backoffice dashboard** — tiles and the consent list. What the client edits. | `http://localhost:5273/admin` | `demo@wemakeimpact.be` / `backoffice-demo-2026` |
 | **Supabase Studio** — the database admin UI from the local stack. For checking a write landed. | http://127.0.0.1:54363 | none, locally |
 
 Everything in section A below is the **backoffice**, now at `/admin`. Section E
