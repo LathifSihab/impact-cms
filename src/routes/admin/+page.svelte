@@ -49,7 +49,7 @@
   <section style="margin-top:44px">
     <div class="head-row" style="margin-bottom:16px">
       <h2 class="h">Events</h2>
-      <a class="pill pill--secondary pill--sm" href="/content/events">Alle events</a>
+      <a class="pill pill--secondary pill--sm" href="/admin/content/events">Alle events</a>
     </div>
 
     {#if data.events.length === 0}
@@ -63,7 +63,7 @@
     {:else}
       <div class="rows">
         {#each data.events as e (e.id)}
-          <a class="row" href="/content/events/{e.id}" style="grid-template-columns:minmax(0,1fr) 150px 150px">
+          <a class="row" href="/admin/content/events/{e.id}" style="grid-template-columns:minmax(0,1fr) 150px 150px">
             <span class="name">{e.title}</span>
             <span class="cell hide-sm">{e.date_text}</span>
             <span class="cell"><Badge kind="status" value={e.status} /></span>
@@ -88,7 +88,7 @@
         {#each data.blocked as b (b.collection + b.id)}
           <a
             class="row"
-            href="/content/{b.collection}/{b.id}"
+            href="/admin/content/{b.collection}/{b.id}"
             style="grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) 120px"
           >
             <span class="name">{b.title}</span>
@@ -107,7 +107,7 @@
         {#each data.recent as r (r.collection + r.id)}
           <a
             class="row"
-            href="/content/{r.collection}/{r.id}"
+            href="/admin/content/{r.collection}/{r.id}"
             style="grid-template-columns:minmax(0,1fr) 150px 120px"
           >
             <span class="name">{r.title}</span>

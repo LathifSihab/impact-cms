@@ -4,12 +4,13 @@ The CMS the brief asked for and the project never had. SvelteKit + TypeScript,
 Supabase for Postgres and auth, Vercel as the deploy target — the stack settled
 in `06-CMS-SCOPE.md` of the handoff folder.
 
-**What it is:** a working backoffice over the ten content types, with the client's
-real content in a real database.
+**What it is:** a backoffice over the ten content types, plus the public
+`/events` and `/journal` pages rendered live from the same database. Edit an
+edition and the page changes on reload — no rebuild, no deploy.
 
-**What it is not, yet:** the thing that publishes the website. The static site
-stays static and stays on Netlify. Say this out loud in the demo — letting the
-client assume otherwise becomes a problem in week three.
+**What it is not:** the whole website. Seven prose pages (home, Over, Contact,
+Samenwerken, Social Impact, Media, Hosted Experiences, Privacy) are still the
+static build on Netlify. Say which half is which in the demo.
 
 ---
 
@@ -36,6 +37,11 @@ npm run user:create -- you@example.com 'a real password'
 
 npm run dev                         # http://localhost:5273
 ```
+
+| | |
+|---|---|
+| Public site | http://localhost:5273/ and `/en` — no login |
+| Backoffice | http://localhost:5273/**admin** |
 
 Do **not** `cp .env.example .env`. That template ships with empty values, so the
 copy leaves you configured with nothing — and running it a second time silently
@@ -77,8 +83,12 @@ scripts/env-local.ts   writes .env from the running local stack
 src/lib/collections.ts THE FILE TO READ FIRST. Ten content types, every field
 src/lib/records.ts     form → row, and the Dutch validation messages
 src/lib/server/        database access, and the Brevo / Ticket Tailor reads
-src/routes/(app)/      the backoffice; content/[collection] is generic over the
+src/routes/admin/      the backoffice; content/[collection] is generic over the
                        registry, so all ten types share one list and one form
+src/routes/(site)/     the public pages, one set of files for both languages
+src/lib/server/site.ts the public reads: locale-aware, relationships resolved
+src/lib/i18n.ts        the chrome strings for nl and en
+src/lib/markdown.ts    escape-first Markdown for journal bodies
 ```
 
 ### The registry
@@ -115,10 +125,18 @@ volgt", "Volgt bij bevestiging". Do not normalise them without keeping a display
 field.
 
 **Auth is Supabase Auth, and there is no self-registration.** Turn email signups
-off in the Supabase dashboard; accounts are made with `npm run user:create`. RLS
-gives `authenticated` full access to the content tables and `anon` nothing at
-all — an anon-readable content API would leak exactly the rows whose consent flag
-is still false.
+off in the Supabase dashboard; accounts are made with `npm run user:create`.
+
+**Everything private lives under `/admin`, and that prefix is the access rule.**
+The guard used to be deny-by-default with an allowlist, which is right for an app
+with no public face. This one has a public face now, so the rule inverted: put a
+backoffice route anywhere else and it will not be protected.
+
+**`anon` can read, but only through policies that enforce consent.** Events,
+journal and the taxonomy tables are readable. `experts` filters on `confirmed`,
+`figures` on `confirmed`, `testimonials` on `consent_on_file` — in the policy,
+not in a query, so a page that forgets to filter still cannot publish a name
+nobody approved. `anon` has SELECT and nothing else.
 
 **The service-role key is never imported by the app.** Only the two scripts use
 it. The app runs on the anon key with RLS.
@@ -145,6 +163,26 @@ Payments, checkout, orders, registrations, tickets, attendance, participants, an
 sending email. Ticket Tailor owns commerce and Brevo owns sending. Rebuilding
 either gives you two systems that both believe they own an order — the most
 expensive mistake available here, per `07-DECISIONS.md` of the handoff folder.
+
+## The public site
+
+`/events`, `/events/[slug]`, `/journal`, `/journal/[slug]`, each also under
+`/en`, from one set of route files via an optional `[[lang=lang]]` segment.
+Dutch sits at the root because that is where the live URLs are.
+
+This closes the brief's hardest requirement. The static site has a single
+`event.html` hardcoded to Basketball Edition 2027, and all nine links on its
+events list point at it — every edition shows the same page. Here each edition
+has its own URL from its own row, and adding one needs no rebuild.
+
+Two things it does not own. The **waitlist form** posts to the live Netlify
+function via `PUBLIC_SUBSCRIBE_ENDPOINT`; that endpoint keeps running where it
+is and must not be rebuilt here. **Images** are still the static site's paths
+(`assets/img/...`), so they 404 until that folder is served alongside.
+
+Translation is a fallback, not a pairing: the model stores one row per language,
+so an English page with no English row shows the Dutch text with English chrome.
+Fixing that properly is still the open item below.
 
 ## Not done
 

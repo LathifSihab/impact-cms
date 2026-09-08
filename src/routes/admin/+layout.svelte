@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '../../app.css';
   import { page } from '$app/state';
   import { COLLECTIONS, NAV_ORDER } from '$lib/collections';
   import type { LayoutData } from './$types';
@@ -6,12 +7,12 @@
   let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
   const current = $derived(page.url.pathname);
-  const isContent = (key: string) => current.startsWith(`/content/${key}`);
+  const isContent = (key: string) => current.startsWith(`/admin/content/${key}`);
 </script>
 
 <div class="shell">
   <aside class="side">
-    <a class="brand" href="/">
+    <a class="brand" href="/admin">
       <strong>IMPACT</strong>
       <span>Backoffice</span>
     </a>
@@ -19,8 +20,8 @@
     <div class="group">
       <span class="label">[ Overzicht ]</span>
       <nav>
-        <a href="/" aria-current={current === '/' ? 'page' : undefined}>Dashboard</a>
-        <a href="/signalen" aria-current={current.startsWith('/signalen') ? 'page' : undefined}>
+        <a href="/admin" aria-current={current === '/admin' ? 'page' : undefined}>Dashboard</a>
+        <a href="/admin/signalen" aria-current={current.startsWith('/admin/signalen') ? 'page' : undefined}>
           Signalen
         </a>
       </nav>
@@ -30,7 +31,7 @@
       <span class="label">[ Inhoud ]</span>
       <nav>
         {#each NAV_ORDER as key (key)}
-          <a href="/content/{key}" aria-current={isContent(key) ? 'page' : undefined}>
+          <a href="/admin/content/{key}" aria-current={isContent(key) ? 'page' : undefined}>
             <span>{COLLECTIONS[key].label}</span>
             <span class="count">{data.counts[key] ?? '—'}</span>
           </a>

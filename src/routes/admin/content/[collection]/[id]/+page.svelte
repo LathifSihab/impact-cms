@@ -31,7 +31,7 @@
 <div class="page">
   <header>
     <span class="label">
-      [ <a href="/content/{data.collection.key}">{data.collection.label}</a> ]
+      [ <a href="/admin/content/{data.collection.key}">{data.collection.label}</a> ]
     </span>
     <h1 class="d-m">{title}</h1>
     <p class="meta" style="margin-top:10px">

@@ -151,7 +151,7 @@
     <button class="pill pill--primary" disabled={busy}>
       {busy ? 'Bewaren…' : mode === 'new' ? `${collection.one} aanmaken` : 'Bewaren'}
     </button>
-    <a class="pill pill--quiet" href="/content/{collection.key}">Terug naar de lijst</a>
+    <a class="pill pill--quiet" href="/admin/content/{collection.key}">Terug naar de lijst</a>
 
     {#if mode === 'edit' && !collection.fixed}
       <span class="spacer"></span>

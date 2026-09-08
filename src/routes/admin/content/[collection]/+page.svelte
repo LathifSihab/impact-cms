@@ -50,7 +50,7 @@
         <h1 class="d-m">{c.label}</h1>
       </div>
       {#if !c.fixed}
-        <a class="pill pill--primary" href="/content/{c.key}/new">Nieuw {c.one}</a>
+        <a class="pill pill--primary" href="/admin/content/{c.key}/new">Nieuw {c.one}</a>
       {/if}
     </div>
     <p class="body" style="margin-top:12px">{c.blurb}</p>
@@ -76,7 +76,7 @@
         {/if}
       </p>
       {#if !c.fixed && c.key !== 'testimonials'}
-        <a class="pill pill--secondary pill--sm" style="margin-top:18px" href="/content/{c.key}/new">
+        <a class="pill pill--secondary pill--sm" style="margin-top:18px" href="/admin/content/{c.key}/new">
           Nieuw {c.one}
         </a>
       {/if}
@@ -90,7 +90,7 @@
       </div>
 
       {#each shown as row (row.id)}
-        <a class="row" href="/content/{c.key}/{row.id}" style="grid-template-columns:{template}">
+        <a class="row" href="/admin/content/{c.key}/{row.id}" style="grid-template-columns:{template}">
           {#each c.list as col, i (col.name)}
             {#if i === 0}
               <span class="name">

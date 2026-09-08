@@ -39,6 +39,6 @@ export const actions: Actions = {
       });
     }
 
-    redirect(303, `/content/${collection.key}/${id}?created=1`);
+    redirect(303, `/admin/content/${collection.key}/${id}?created=1`);
   }
 };

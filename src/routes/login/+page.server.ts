@@ -3,7 +3,7 @@ import { env } from '$env/dynamic/public';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ url }) => ({
-  next: url.searchParams.get('next') ?? '/',
+  next: url.searchParams.get('next') ?? '/admin',
   // Surfaced in the UI rather than thrown, so a misconfigured deploy says what is
   // wrong instead of failing with a blank page — the project has lost hours to
   // exactly this (see 07-DECISIONS.md on environment variables).
@@ -15,7 +15,7 @@ export const actions: Actions = {
     const form = await request.formData();
     const email = String(form.get('email') ?? '').trim();
     const password = String(form.get('password') ?? '');
-    const next = String(form.get('next') ?? '/') || '/';
+    const next = String(form.get('next') ?? '/admin') || '/admin';
 
     if (!email || !password) {
       return fail(400, { email, error: 'Vul je e-mailadres en wachtwoord in.' });
@@ -30,7 +30,7 @@ export const actions: Actions = {
     }
 
     // Only ever redirect to a path on this origin.
-    const target = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+    const target = next.startsWith('/') && !next.startsWith('//') ? next : '/admin';
     redirect(303, new URL(target, url.origin).pathname + new URL(target, url.origin).search);
   }
 };

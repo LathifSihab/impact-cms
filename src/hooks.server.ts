@@ -12,7 +12,21 @@ import { createServerClient } from '@supabase/ssr';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 
-const PUBLIC_ROUTES = ['/login', '/auth'];
+/**
+ * The backoffice lives entirely under /admin, and that prefix is the whole
+ * access rule.
+ *
+ * This used to be the other way round — everything private except an allowlist —
+ * which is the safer default when an app has no public face. It has one now: the
+ * CMS renders /events and /journal for visitors, so a deny-by-default guard
+ * would have to allowlist the public site instead, and every new public page
+ * would be a 302 to the login screen until someone remembered to add it.
+ *
+ * Putting every authenticated route under one directory makes the rule
+ * enforceable by where a file sits rather than by keeping a list in sync. Add a
+ * backoffice route anywhere else and it is not protected — so do not.
+ */
+const ADMIN_PREFIX = '/admin';
 
 export const handle: Handle = async ({ event, resolve }) => {
   event.locals.supabase = createServerClient(
@@ -55,16 +69,14 @@ export const handle: Handle = async ({ event, resolve }) => {
   event.locals.session = session;
   event.locals.user = user;
 
-  const isPublic = PUBLIC_ROUTES.some(
-    (p) => event.url.pathname === p || event.url.pathname.startsWith(p + '/')
-  );
+  const path = event.url.pathname;
+  const isAdmin = path === ADMIN_PREFIX || path.startsWith(ADMIN_PREFIX + '/');
 
-  if (!user && !isPublic) {
-    const next = event.url.pathname + event.url.search;
-    redirect(303, `/login?next=${encodeURIComponent(next)}`);
+  if (!user && isAdmin) {
+    redirect(303, `/login?next=${encodeURIComponent(path + event.url.search)}`);
   }
-  if (user && event.url.pathname === '/login') {
-    redirect(303, '/');
+  if (user && path === '/login') {
+    redirect(303, ADMIN_PREFIX);
   }
 
   return resolve(event, {

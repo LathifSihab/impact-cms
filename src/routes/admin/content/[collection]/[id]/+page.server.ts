@@ -62,6 +62,6 @@ export const actions: Actions = {
       return fail(400, { problem: { message: err.message, detail: err.detail } });
     }
 
-    redirect(303, `/content/${collection.key}`);
+    redirect(303, `/admin/content/${collection.key}`);
   }
 };

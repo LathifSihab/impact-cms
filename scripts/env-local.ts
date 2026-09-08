@@ -63,7 +63,7 @@ if (!apiUrl || !anonKey || !serviceKey) {
 const keep = new Map<string, string>();
 if (existsSync(envPath)) {
   for (const line of readFileSync(envPath, 'utf8').split('\n')) {
-    const m = line.match(/^\s*(BREVO_API_KEY|TICKET_TAILOR_API_KEY)\s*=\s*(.*)\s*$/);
+    const m = line.match(/^\s*(BREVO_API_KEY|TICKET_TAILOR_API_KEY|PUBLIC_SITE_URL|PUBLIC_SUBSCRIBE_ENDPOINT|PUBLIC_TICKET_TAILOR_BOX_OFFICE)\s*=\s*(.*)\s*$/);
     if (m && m[2].trim()) keep.set(m[1], m[2].trim());
   }
 }
@@ -85,6 +85,11 @@ SUPABASE_SERVICE_ROLE_KEY=${serviceKey}
 # empty table that looks like "no signups".
 BREVO_API_KEY=${keep.get('BREVO_API_KEY') ?? ''}
 TICKET_TAILOR_API_KEY=${keep.get('TICKET_TAILOR_API_KEY') ?? ''}
+
+# ---- the rendered public site ------------------------------------------------
+PUBLIC_SITE_URL=${keep.get('PUBLIC_SITE_URL') ?? ''}
+PUBLIC_SUBSCRIBE_ENDPOINT=${keep.get('PUBLIC_SUBSCRIBE_ENDPOINT') ?? ''}
+PUBLIC_TICKET_TAILOR_BOX_OFFICE=${keep.get('PUBLIC_TICKET_TAILOR_BOX_OFFICE') ?? ''}
 `;
 
 writeFileSync(envPath, contents, 'utf8');

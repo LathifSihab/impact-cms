@@ -75,7 +75,7 @@
         {#each data.rows as r (r.id)}
           <div class="row" style="grid-template-columns:minmax(0,1.6fr) 140px 110px 110px 150px">
             <span class="name">
-              <a href="/content/events/{r.id}">{r.title}</a>
+              <a href="/admin/content/events/{r.id}">{r.title}</a>
               <span class="meta" style="display:block;font-weight:400">{r.dateText}</span>
             </span>
             <span class="cell hide-sm"><Badge kind="status" value={r.status} /></span>

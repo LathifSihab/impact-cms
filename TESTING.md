@@ -94,11 +94,13 @@ The app is on **http://localhost:5273**.
 
 | What | Where | Login |
 |---|---|---|
-| **The CMS dashboard** — the backoffice home page, with the four tiles and the consent list. This is the product. | http://localhost:5273/ | `demo@wemakeimpact.be` / `backoffice-demo-2026` |
-| **Supabase Studio** — the database admin UI that ships with the local stack. Useful for checking a write landed; not something the client ever sees. | http://127.0.0.1:54363 | none, locally |
+| **The public site** — `/events` and `/journal`, rendered live from the database. What a visitor sees. | http://localhost:5273/ and `/en` | none |
+| **The backoffice dashboard** — tiles and the consent list. What the client edits. | http://localhost:5273/**admin** | `demo@wemakeimpact.be` / `backoffice-demo-2026` |
+| **Supabase Studio** — the database admin UI from the local stack. For checking a write landed. | http://127.0.0.1:54363 | none, locally |
 
-Everything in section A below is the **CMS dashboard**. You reach it by logging
-in at `/login` — there is no separate URL, and no way to see it signed out.
+Everything in section A below is the **backoffice**, now at `/admin`. Section E
+covers the public pages. Anything under `/admin` redirects to `/login` when
+signed out; everything else is public by design.
 
 If `npm run dev` prints a port other than 5273, something else already holds it
 (often an earlier `npm run dev` you did not stop). Use the port it prints, or
@@ -132,11 +134,11 @@ admin. It is a diagnostic tool, not a second backoffice.
 
 ## 1. You cannot get in without logging in
 
-Open http://localhost:5273/ in a private window.
+Open http://localhost:5273/admin in a private window.
 
-- [ ] You land on `/login?next=%2F`, not on the dashboard.
-- [ ] Try http://localhost:5273/content/events directly — same redirect, with
-      `next=%2Fcontent%2Fevents`.
+- [ ] You land on `/login?next=%2Fadmin`, not on the dashboard.
+- [ ] Try http://localhost:5273/admin/content/events directly — same redirect,
+      with `next=%2Fadmin%2Fcontent%2Fevents`.
 - [ ] The login page does **not** show a red "Niet geconfigureerd" box. If it
       does, `.env` is missing or wrong, and nothing below will work.
 
@@ -230,7 +232,7 @@ Then **Testimonials**:
 - [ ] On the edit page, **Verwijderen** asks "Zeker weten?" before it does
       anything. Confirm → back to the list, record gone.
 - [ ] **Foundations** and **Leeftijdsgroepen** have no "Nieuw" button — they are
-      fixed sets. `/content/foundations/new` returns 403 if you type it in.
+      fixed sets. `/admin/content/foundations/new` returns 403 if you type it in.
 
 ## 8. All ten types load
 
@@ -242,7 +244,7 @@ populated list:
 
 ## 9. Signalen degrades honestly
 
-Go to **Signalen** with no API keys set.
+Go to **/admin/signalen** with no API keys set.
 
 - [ ] Two red notices: "Brevo niet gelezen" and "Ticket Tailor niet gelezen",
       each naming the missing variable and reminding you a new value only counts
@@ -283,18 +285,18 @@ cd /tmp && rm -f jar.txt
 ### Auth guard
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" $BASE/
-curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" $BASE/content/events
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" $BASE/admin
+curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" $BASE/admin/content/events
 ```
 
-Expect `303 .../login?next=%2F` and `303 .../login?next=%2Fcontent%2Fevents`.
+Expect `303 .../login?next=%2Fadmin` and `303 .../login?next=%2Fadmin%2Fcontent%2Fevents`.
 
 ### Login
 
 ```bash
 curl -s -c jar.txt -b jar.txt -X POST $BASE/login -H "Origin: $BASE" \
   --data-urlencode "email=demo@wemakeimpact.be" \
-  --data-urlencode "password=wrong" --data-urlencode "next=/" | head -c 120
+  --data-urlencode "password=wrong" --data-urlencode "next=/admin" | head -c 120
 ```
 
 Expect a `401` failure carrying "Deze combinatie klopt niet.". Then:
@@ -302,17 +304,17 @@ Expect a `401` failure carrying "Deze combinatie klopt niet.". Then:
 ```bash
 curl -s -c jar.txt -b jar.txt -X POST $BASE/login -H "Origin: $BASE" \
   --data-urlencode "email=demo@wemakeimpact.be" \
-  --data-urlencode "password=backoffice-demo-2026" --data-urlencode "next=/"
+  --data-urlencode "password=backoffice-demo-2026" --data-urlencode "next=/admin"
 ```
 
-Expect `{"type":"redirect","status":303,"location":"/"}`.
+Expect `{"type":"redirect","status":303,"location":"/admin"}`.
 
 ### Every list view answers
 
 ```bash
 for c in events journal partners experts figures tiers formats foundations age_groups testimonials; do
   printf "%-14s " "$c"
-  curl -s -b jar.txt -o /tmp/l.html -w "%{http_code}  " $BASE/content/$c
+  curl -s -b jar.txt -o /tmp/l.html -w "%{http_code}  " $BASE/admin/content/$c
   grep -oE "[0-9]+ van [0-9]+|Leeg \]" /tmp/l.html | head -1
 done
 ```
@@ -324,9 +326,9 @@ testimonials.
 ### Error cases
 
 ```bash
-curl -s -b jar.txt -o /dev/null -w "new on fixed set: %{http_code}\n" $BASE/content/foundations/new
-curl -s -b jar.txt -o /dev/null -w "unknown type:     %{http_code}\n" $BASE/content/nope
-curl -s -b jar.txt -o /dev/null -w "unknown record:   %{http_code}\n" $BASE/content/events/nope
+curl -s -b jar.txt -o /dev/null -w "new on fixed set: %{http_code}\n" $BASE/admin/content/foundations/new
+curl -s -b jar.txt -o /dev/null -w "unknown type:     %{http_code}\n" $BASE/admin/content/nope
+curl -s -b jar.txt -o /dev/null -w "unknown record:   %{http_code}\n" $BASE/admin/content/events/nope
 ```
 
 Expect `403`, `404`, `404`.
@@ -336,7 +338,7 @@ Expect `403`, `404`, `404`.
 Save an event with changed relationships:
 
 ```bash
-curl -s -b jar.txt -X POST "$BASE/content/events/camp-basketball-edition-2027?/save" \
+curl -s -b jar.txt -X POST "$BASE/admin/content/events/camp-basketball-edition-2027?/save" \
  -H "Origin: $BASE" \
  --data-urlencode "title=IMPACT Camp — Basketball Edition 2027" \
  --data-urlencode "format_id=camps" --data-urlencode "edition_year=2027" \
@@ -375,7 +377,7 @@ so the four relationships that were there before are gone.
 ### Validation rejects and writes nothing
 
 ```bash
-curl -s -b jar.txt -X POST "$BASE/content/events/camp-basketball-edition-2027?/save" \
+curl -s -b jar.txt -X POST "$BASE/admin/content/events/camp-basketball-edition-2027?/save" \
  -H "Origin: $BASE" \
  --data-urlencode "title=" --data-urlencode "format_id=camps" \
  --data-urlencode "edition_year=2027" --data-urlencode "status=open" \
@@ -417,16 +419,23 @@ API=http://127.0.0.1:54361
 ANON=<paste ANON_KEY>
 ```
 
-**1. Anonymous cannot read content.** Especially experts, whose `confirmed` is
-false — an anon-readable content API would leak exactly the rows the flag exists
-to hide.
+**1. Anonymous reads are gated by consent, not blocked outright.** The public
+site has to read content, so `anon` now has SELECT — but the policies filter the
+three tables that name real people or make public claims.
 
 ```bash
-curl -s "$API/rest/v1/experts?select=*" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
-curl -s "$API/rest/v1/events?select=id"  -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+# public content: rows expected
+curl -s "$API/rest/v1/events?select=id" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+
+# gated: must be [] while every row is unconfirmed
+curl -s "$API/rest/v1/experts?select=id,confirmed" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+curl -s "$API/rest/v1/figures?select=id,confirmed" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+curl -s "$API/rest/v1/testimonials?select=id"      -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
 ```
 
-Expect `42501 permission denied` for both. Any row coming back is a failure.
+Events come back. The other three return `[]` — **an unconfirmed name reaching
+anon is the most serious failure this system can have.** Tick `confirmed` on one
+expert in the backoffice and re-run: exactly that one appears, and no other.
 
 **2. Anonymous cannot write.**
 
@@ -473,6 +482,72 @@ adapter locally and let Vercel do the Vercel build.
 
 ---
 
+# E. The rendered public site
+
+These pages come out of the database, so this is where you prove the loop the
+brief actually asked for: change content, reload, see it.
+
+## Every edition has its own page
+
+The static site cannot do this. `site/event.html` is one hardcoded page for
+Basketball Edition 2027, and all nine links on its events list point at it.
+
+```bash
+for s in camp-basketball-edition-2027 camp-basketball-edition-2026 \
+         day-brussels-2027 retreat-student-entrepreneurs; do
+  printf "%-32s " "$s"
+  curl -s "http://localhost:5273/events/$s" | grep -oE "<title>[^<]*</title>"
+done
+```
+
+Four different titles. Each page is its own row.
+
+## Both languages, from one set of files
+
+- [ ] http://localhost:5273/events — Dutch: "Wachtlijst open", "Praktisch"
+- [ ] http://localhost:5273/en/events — English chrome: "Waiting list open"
+- [ ] The language link keeps your place: `/en/events/<slug>` ↔ `/events/<slug>`
+- [ ] Content itself stays Dutch on the English pages. That is the fallback
+      working, not a bug — the model stores one row per language and none of the
+      seeded rows are English.
+
+## An edit appears with no rebuild
+
+- [ ] Open an event in `/admin`, change **Datum in tekst** and **Status**, save.
+- [ ] Reload http://localhost:5273/events — the new date and status are there.
+- [ ] Compare with the static copy on :8080, which is unchanged because nothing
+      rebuilt it. That contrast is the demo.
+
+## Status drives the page, not just a label
+
+- [ ] `waitlist` → the waiting-list form, including the guardian consent tick
+- [ ] `open` → the box office link (needs `PUBLIC_TICKET_TAILOR_BOX_OFFICE`)
+- [ ] `full` / `past` → neither
+
+Without `PUBLIC_SUBSCRIBE_ENDPOINT` the form is replaced by a line saying it is
+not connected, rather than posting into nowhere.
+
+## The consent gate holds in public
+
+The important one.
+
+- [ ] All three experts start unconfirmed. On
+      `/events/camp-basketball-edition-2027`, no expert names appear anywhere.
+- [ ] Tick `confirmed` on **Julie Dingemans** in `/admin`, reload the public
+      page: her name appears, the other two still do not.
+- [ ] Untick it: gone again.
+
+Enforced by the RLS policy, not by the template. A page that forgot to filter
+still could not render an unapproved name.
+
+## Missing images are expected
+
+`assets/img/...` 404s and the placeholder colour shows, because only the
+stylesheet was copied into this repo. Drop the original repo's `assets/` into
+`cms/static/` if you want the pages to look finished.
+
+---
+
 # Viewing the public website locally
 
 You can, and it is worth doing before a demo — but **the CMS does not feed it.**
@@ -497,9 +572,10 @@ They are 17 MB and 19 MB and were left out of the handoff on purpose; the HTML
 still points at `assets/img/...` and `assets/video/...`, so copy those across
 from the original repo if you want the site to look finished.
 
-## Why your CMS edits do not show up
+## Why your CMS edits do not show up *here*
 
-They will not, and this is the scoping decision from 06-CMS-SCOPE.md, not a bug:
+They do show up on the CMS-rendered pages (section E). They do **not** show up on
+this static copy, and that is the scoping decision from 06-CMS-SCOPE.md:
 
 > In the first pass, the CMS manages data. It does not serve the website.
 
@@ -529,20 +605,14 @@ database changes; the website does not.
 database, not yet the thing that publishes the site" is an impressive sentence.
 Letting the client assume otherwise becomes a problem in week three.
 
-## What closing the loop would take
+## What is left
 
-Two options, in order of size:
-
-1. **Export from the CMS back to `reference/content/`**, then run the existing
-   Python build and commit the output. Small, and it reuses the pipeline that
-   already does the English generation, the SEO head blocks, the sitemap and the
-   HTML validity check. It needs `tools/` from the original repo, which is not in
-   this handoff.
-2. **Render the pages from the CMS.** This is the real phase two, and it is
-   bigger than it looks, because it means reimplementing all four of those
-   pipeline stages, not just the HTML.
-
-Neither is built.
+Events and Journal are rendered by the CMS now — section E. The remaining prose
+pages (home, Over, Contact, Samenwerken, Social Impact, Media, Hosted
+Experiences, Privacy) are still this static build, and their copy is
+hand-authored with no content type behind it. Moving those means either adding
+content types the data model deliberately omits, or keeping them static and
+serving the two halves from one domain.
 
 # What these tests do not cover
 
