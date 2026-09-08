@@ -90,6 +90,42 @@ quotes.
 
 The app is on **http://localhost:5273**.
 
+### Two things get called "the dashboard"
+
+| What | Where | Login |
+|---|---|---|
+| **The CMS dashboard** — the backoffice home page, with the four tiles and the consent list. This is the product. | http://localhost:5273/ | `demo@wemakeimpact.be` / `backoffice-demo-2026` |
+| **Supabase Studio** — the database admin UI that ships with the local stack. Useful for checking a write landed; not something the client ever sees. | http://127.0.0.1:54363 | none, locally |
+
+Everything in section A below is the **CMS dashboard**. You reach it by logging
+in at `/login` — there is no separate URL, and no way to see it signed out.
+
+If `npm run dev` prints a port other than 5273, something else already holds it
+(often an earlier `npm run dev` you did not stop). Use the port it prints, or
+free 5273 first.
+
+### Supabase Studio, briefly
+
+Open http://127.0.0.1:54363 and pick the **Table Editor**. You should see the
+ten content tables plus the three `events_*` join tables. Two things it is good
+for:
+
+- **Confirming a write really landed.** Edit an event in the CMS, then look at
+  the row here. A green "Bewaard." is the app telling you it succeeded; this is
+  the far side actually saying so, which is the distinction this project keeps
+  paying for.
+- **Seeing the join tables.** `events_foundations`, `events_experts` and
+  `events_partners` carry a `position` column, which is the order the picker
+  put them in. Nothing in the CMS shows you those rows directly.
+
+The **SQL Editor** runs the same queries used in section B if you would rather
+not use `docker exec`.
+
+Do not use Studio to edit content during a demo. It bypasses every validation
+rule and every consent gate in the CMS — including the ones that stop a real
+person's name being published — because it writes to Postgres directly as an
+admin. It is a diagnostic tool, not a second backoffice.
+
 ---
 
 # A. By hand, in a browser
