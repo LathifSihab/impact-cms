@@ -473,6 +473,77 @@ adapter locally and let Vercel do the Vercel build.
 
 ---
 
+# Viewing the public website locally
+
+You can, and it is worth doing before a demo — but **the CMS does not feed it.**
+
+## Serve it
+
+The site is 24 static HTML files. The pages use relative asset paths, so the
+document root needs `assets/` sitting next to the HTML:
+
+```bash
+cd /path/to/handoff
+mkdir -p /tmp/site-preview
+cp -r site/* /tmp/site-preview/
+cp -r assets  /tmp/site-preview/assets
+cd /tmp/site-preview && python -m http.server 8080
+```
+
+Dutch on http://127.0.0.1:8080/, English on http://127.0.0.1:8080/en/.
+
+**Photography and video are missing** and the pages will render without them.
+They are 17 MB and 19 MB and were left out of the handoff on purpose; the HTML
+still points at `assets/img/...` and `assets/video/...`, so copy those across
+from the original repo if you want the site to look finished.
+
+## Why your CMS edits do not show up
+
+They will not, and this is the scoping decision from 06-CMS-SCOPE.md, not a bug:
+
+> In the first pass, the CMS manages data. It does not serve the website.
+
+The site is static HTML **committed to git**, generated locally by a Python
+pipeline (`tools/build.py` in the original repo — not in this handoff) that reads
+`reference/content/` and the hand-authored Dutch pages. There is no build step at
+deploy time; Netlify publishes `site/` as-is.
+
+You can see the gap for yourself:
+
+```bash
+grep -n "Juli 2027" site/events.html
+```
+
+The date is hardcoded at lines 196 and 394. And nothing in `site/` mentions
+Supabase or the CMS at all:
+
+```bash
+grep -rlE "supabase|localhost:5273" site/    # no matches
+```
+
+So the two systems currently share their content only by both having been built
+from the same `reference/content/` files. Change an event in the CMS and the
+database changes; the website does not.
+
+**Say this out loud in the demo.** "A working backoffice with real data in a real
+database, not yet the thing that publishes the site" is an impressive sentence.
+Letting the client assume otherwise becomes a problem in week three.
+
+## What closing the loop would take
+
+Two options, in order of size:
+
+1. **Export from the CMS back to `reference/content/`**, then run the existing
+   Python build and commit the output. Small, and it reuses the pipeline that
+   already does the English generation, the SEO head blocks, the sitemap and the
+   HTML validity check. It needs `tools/` from the original repo, which is not in
+   this handoff.
+2. **Render the pages from the CMS.** This is the real phase two, and it is
+   bigger than it looks, because it means reimplementing all four of those
+   pipeline stages, not just the HTML.
+
+Neither is built.
+
 # What these tests do not cover
 
 Being straight about the edges, so nobody mistakes a green run for more than it is:
