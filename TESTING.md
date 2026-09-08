@@ -502,6 +502,32 @@ done
 
 Four different titles. Each page is its own row.
 
+## It looks like the real site
+
+The pages are the static site's markup with the lists swapped for database
+reads, so this is a visual comparison, not a code one.
+
+- [ ] Open http://localhost:5273/events beside
+      https://demo-impact-c399e3.netlify.app/events.html — same hero, same
+      `event-row` list, same black format strip, same alternating format
+      sections, same overview table, same CTA cards.
+- [ ] Same for `/journal` against `.../journal.html`: hero, feature, filter
+      chips, `jcard` grid, news band.
+- [ ] `/events/<slug>` against `.../event.html`: hero pills and kicker, the
+      metabar, the two-column body with a sticky sidebar, programme day rows,
+      foundation grid, FAQ accordions, practical table.
+- [ ] The nav is the real one: hover a top-level item and the dropdown opens;
+      narrow the window and the burger opens the mobile menu.
+- [ ] Scroll — the nav compacts past 50px and sections fade in.
+- [ ] The journal filter chips actually filter the grid. That is the static
+      site's own `main.js` working on transcribed `data-cat` attributes.
+- [ ] Over, Samenwerken, Contact and Privacy in the nav go to the deployed
+      static site, not to a 404 here.
+
+**Images are the visible gap.** `static/assets/` ships brand, css and js;
+`assets/img` and `assets/video` are gitignored, so photography slots are empty
+until you copy those folders in from the original repo.
+
 ## Both languages, from one set of files
 
 - [ ] http://localhost:5273/events — Dutch: "Wachtlijst open", "Praktisch"

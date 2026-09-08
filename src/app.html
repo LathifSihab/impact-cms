@@ -11,6 +11,15 @@
       href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Figtree:wght@400;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script>
+      /* Transcribed from the static pages' own head script: `.js` is what the
+         stylesheet keys reveal-on-scroll off, and marking the preloader as seen
+         is what the site itself does, so it does not run here either. */
+      (function (d) {
+        d.documentElement.classList.add('js');
+        try { sessionStorage.setItem('hasSeenPreloader', '1'); } catch (e) {}
+      })(document);
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

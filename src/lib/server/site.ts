@@ -269,3 +269,38 @@ export async function allSlugs(
     journal: (j.data ?? []).map((r) => String((r as Row).id))
   };
 }
+
+export interface FormatRow {
+  id: string;
+  name: string;
+  bracketName: string;
+  description: string;
+  meta: string;
+  body: string | null;
+  image: string | null;
+  ticks: string[];
+  isHosted: boolean;
+  order: number;
+}
+
+/** The formats, for the black overview strip and the per-format sections. */
+export async function listFormats(db: SupabaseClient): Promise<FormatRow[]> {
+  const { data, error } = await db
+    .from('formats')
+    .select('id,name,bracket_name,description,meta,body,image,ticks,is_hosted,sort_order')
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+
+  return ((data ?? []) as Row[]).map((f) => ({
+    id: f.id,
+    name: f.name,
+    bracketName: f.bracket_name,
+    description: f.description,
+    meta: f.meta,
+    body: f.body,
+    image: f.image,
+    ticks: Array.isArray(f.ticks) ? f.ticks : [],
+    isHosted: f.is_hosted === true,
+    order: f.sort_order ?? 0
+  }));
+}

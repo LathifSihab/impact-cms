@@ -171,15 +171,43 @@ expensive mistake available here, per `07-DECISIONS.md` of the handoff folder.
 `/en`, from one set of route files via an optional `[[lang=lang]]` segment.
 Dutch sits at the root because that is where the live URLs are.
 
+**The markup is the static site's, not a lookalike.** Sections, classes and
+order are transcribed from `site/events.html`, `site/event.html` and
+`site/journal.html`, and `assets/` is served from `static/assets/`, so the same
+stylesheet and the same `assets/js` files do the work they were built for —
+sticky nav, mobile menu, reveal-on-scroll, cookie consent, the newsletter dome,
+the journal filter chips, the box office widget. What changed is where the
+content comes from:
+
+| Page | From the database |
+|---|---|
+| `/events` | upcoming `event-row`s, the format strip, the per-format sections, the full overview table |
+| `/events/<slug>` | hero, metabar pairs, programme `day-row`s, `fund-grid`, `expert-grid`, FAQ, gallery, partners, practical sidebar |
+| `/journal` | the feature, the `jcard` grid, and the filter chips (only for categories that have posts) |
+
+The prose around them — hero copy, section leads, CTA cards — is hand-authored
+on the static site with no content type behind it, so it is reproduced as
+written.
+
 This closes the brief's hardest requirement. The static site has a single
 `event.html` hardcoded to Basketball Edition 2027, and all nine links on its
 events list point at it — every edition shows the same page. Here each edition
 has its own URL from its own row, and adding one needs no rebuild.
 
-Two things it does not own. The **waitlist form** posts to the live Netlify
-function via `PUBLIC_SUBSCRIBE_ENDPOINT`; that endpoint keeps running where it
-is and must not be rebuilt here. **Images** are still the static site's paths
-(`assets/img/...`), so they 404 until that folder is served alongside.
+### What it does not own
+
+Only Events and Journal come from the CMS. Over, Samenwerken, Social Impact,
+Media, Contact, Privacy and Hosted Experiences are still the static build, and
+the nav links out to it through `PUBLIC_STATIC_SITE_BASE`. Leave that empty and
+those links stay relative, which means they 404 locally.
+
+The **waitlist form** posts to the live Netlify function via
+`PUBLIC_SUBSCRIBE_ENDPOINT`; that endpoint keeps running where it is and must
+not be rebuilt here.
+
+`static/assets/` carries brand, css and js. `assets/img` and `assets/video` are
+gitignored — 17 MB and 19 MB, and the photography includes minors whose consent
+is not held. Drop them in locally and the pages fill out.
 
 Translation is a fallback, not a pairing: the model stores one row per language,
 so an English page with no English row shows the Dutch text with English chrome.

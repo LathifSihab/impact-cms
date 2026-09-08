@@ -1,11 +1,22 @@
 <script lang="ts">
+  /**
+   * /journal/<slug>.
+   *
+   * The static site has no per-article page — journal.html links nowhere, the
+   * cards are not anchors. So this is the one page with no counterpart to
+   * transcribe. It is built from the same primitives the rest of the site uses
+   * (hero--page, wrap, running, d-l, band, news-band) so it reads as part of the
+   * same product rather than inventing a new layout.
+   */
   import { formatDate, imageUrl, path, translator } from '$lib/i18n';
   import { renderMarkdown } from '$lib/markdown';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
+
   const t = $derived(translator(data.locale));
   const p = $derived((rest: string) => path(data.locale, rest));
+  const nl = $derived(data.locale === 'nl');
   const post = $derived(data.post);
   /* Safe to inject: renderMarkdown escapes the source before re-introducing a
      fixed set of tags, so nothing stored can become markup. See lib/markdown.ts. */
@@ -17,41 +28,80 @@
   <meta name="description" content={post.meta} />
 </svelte:head>
 
-<section class="section" style="padding-bottom:40px">
-  <div class="wrap" style="max-width:820px">
-    <a class="meta" href={p('/journal')}>← {t('journal.back')}</a>
-    <span class="tag" style="display:block;margin-top:22px">
-      {t(`cat.${post.category}` as 'cat.story')}
-    </span>
-    <h1 class="d-m" style="margin:14px 0 16px">{post.title}</h1>
-    <p class="meta">{formatDate(post.publishedAt, data.locale)} · {post.meta}</p>
+<header class="hero hero--page" data-reveal-root>
+  <div class="hero-content wrap">
+    <div>
+      <span class="label reveal">[ {t(`cat.${post.category}` as 'cat.story')} ]</span>
+      <h1 class="d-xl reveal">{post.title}</h1>
+      <p class="intro reveal">{post.meta}</p>
+    </div>
+  </div>
+</header>
+
+<section class="section" style="padding-top:0">
+  <div class="wrap" style="max-width:900px">
+    <img
+      src={imageUrl(post.image)}
+      alt={post.alt}
+      style="width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)"
+    />
+    <p class="meta" style="margin-top:14px">
+      {formatDate(post.publishedAt, data.locale)} · {post.meta}
+    </p>
   </div>
 </section>
 
-<div class="wrap" style="max-width:820px">
-  <img
-    src={imageUrl(post.image)}
-    alt={post.alt}
-    style="width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)"
-  />
-</div>
-
-<section class="section" style="padding-top:48px">
-  <div class="wrap prose" style="max-width:820px">
+<section class="section" style="padding-top:0">
+  <div class="wrap prose" style="max-width:760px">
     {@html html}
 
     {#if post.relatedEvent}
-      <div style="margin-top:48px;border-top:1px solid var(--border);padding-top:24px">
-        <span class="label">[ {t('journal.related')} ]</span>
+      <div style="margin-top:48px;border-top:1px solid var(--border);padding-top:26px">
+        <span class="running">{t('journal.related')}</span>
         <a
-          class="pill pill--secondary pill--sm"
-          style="margin-top:14px"
+          class="pill pill--secondary"
+          style="margin-top:16px"
           href={p(`/events/${post.relatedEvent.id}`)}
         >
           {post.relatedEvent.title}
         </a>
       </div>
     {/if}
+
+    <p style="margin-top:40px">
+      <a class="meta" href={p('/journal')}>← {t('journal.back')}</a>
+    </p>
+  </div>
+</section>
+
+<section class="news-band">
+  <div class="wrap">
+    <h2 class="d-l d-l--40" style="margin:16px 0 12px">
+      {nl ? 'Blijf op de hoogte' : 'Join the IMPACT community'}
+    </h2>
+    <p class="body">
+      {nl
+        ? 'Nieuwe verhalen, events en partnerships. Eén mail per maand.'
+        : 'New stories, events and partnerships. One mail a month.'}
+    </p>
+    <form class="news-form" data-newsletter novalidate name="newsletter" action="/">
+      <input type="hidden" name="form-name" value="newsletter" />
+      <input type="hidden" name="bot-field" />
+      <div class="field-row">
+        <label class="sr-only" for="a-news">E-mail</label>
+        <input
+          id="a-news"
+          name="email"
+          type="email"
+          placeholder={nl ? 'jouw e-mailadres' : 'your email address'}
+          required
+        />
+        <button type="submit" class="pill pill--primary pill--sm">
+          {nl ? 'Inschrijven' : 'Subscribe'}
+        </button>
+      </div>
+      <p class="form-msg" role="status"></p>
+    </form>
   </div>
 </section>
 
@@ -96,12 +146,6 @@
     color: var(--red);
     text-decoration: underline;
     text-underline-offset: 3px;
-  }
-  .prose :global(code) {
-    font-family: var(--mono);
-    font-size: 0.9em;
-    background: var(--bone);
-    padding: 2px 5px;
   }
   .prose :global(hr) {
     border: 0;

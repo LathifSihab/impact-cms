@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
      * rather than showing a form that silently goes nowhere.
      */
     subscribeEndpoint: env.PUBLIC_SUBSCRIBE_ENDPOINT ?? '',
-    boxOffice: env.PUBLIC_TICKET_TAILOR_BOX_OFFICE ?? ''
+    boxOffice: env.PUBLIC_TICKET_TAILOR_BOX_OFFICE ?? '',
+    staticBase: env.PUBLIC_STATIC_SITE_BASE ?? ''
   };
 };
