@@ -519,6 +519,20 @@ reads, so this is a visual comparison, not a code one.
 - [ ] The nav is the real one: hover a top-level item and the dropdown opens;
       narrow the window and the burger opens the mobile menu.
 - [ ] Scroll — the nav compacts past 50px and sections fade in.
+- [ ] The newsletter popup closes: click the ×, click the backdrop, press Escape.
+
+Those last two broke once and have a regression test now:
+
+```bash
+npm run dev                                    # in one terminal
+npm run test:behaviour                         # defaults to /events
+npm run test:behaviour -- http://localhost:5273/journal
+```
+
+It loads the served page into jsdom, runs the site's own scripts and asserts
+the dome closes and `[data-reveal]` elements receive `.is-in`. Both failed when
+the scripts were loaded from `<svelte:head>`, because that runs them before
+hydration and their listeners were bound to nodes Svelte then replaced.
 - [ ] The journal filter chips actually filter the grid. That is the static
       site's own `main.js` working on transcribed `data-cat` attributes.
 - [ ] Over, Samenwerken, Contact and Privacy in the nav go to the deployed

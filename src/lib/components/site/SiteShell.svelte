@@ -99,7 +99,7 @@
 <a class="skip-link" href="#main">{T.skip}</a>
 
 <!-- utility bar -->
-<div class="util">
+<div class="util" data-sveltekit-reload>
   <div class="wrap">
     <ul>
       <li><a href={ext('assets/impact-brochure.pdf')} target="_blank" rel="noopener">{T.brochure}</a></li>
@@ -116,7 +116,7 @@
   </div>
 </div>
 
-<nav class="nav">
+<nav class="nav" data-sveltekit-reload>
   <div class="wrap">
     <a href={ext('index.html')} class="logo" aria-label="IMPACT — home">
       <img src="/assets/brand/impact-logo.png" alt="IMPACT" width="647" height="145" />
@@ -169,7 +169,7 @@
   </div>
 </nav>
 
-<div class="mobile-menu" id="mobile-menu">
+<div class="mobile-menu" id="mobile-menu" data-sveltekit-reload>
   <div class="mm-top">
     <a href={ext('index.html')} class="logo logo--invert">
       <img src="/assets/brand/impact-logo.png" alt="IMPACT" width="647" height="145" />
@@ -212,11 +212,11 @@
   </div>
 </div>
 
-<main id="main">
+<main id="main" data-sveltekit-reload>
   {@render children()}
 </main>
 
-<footer class="footer">
+<footer class="footer" data-sveltekit-reload>
   <div class="wrap">
     <div class="grid">
       <div class="brandcol">
@@ -285,7 +285,7 @@
   </div>
 </footer>
 
-<div class="dome" id="dome" hidden>
+<div class="dome" id="dome" hidden data-sveltekit-reload>
   <div class="dome-panel" role="dialog" aria-modal="true" aria-labelledby="dome-title">
     <button class="dome-close" type="button" aria-label={T.menuClose}>×</button>
     <div class="dome-in">
