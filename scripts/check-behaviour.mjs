@@ -49,7 +49,16 @@ window.IntersectionObserver = class {
   unobserve() {}
   disconnect() {}
 };
-window.matchMedia = window.matchMedia || ((q) => ({ matches: false, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }));
+// Desktop-ish: main.js takes the exit-intent path on wide viewports and the
+// scroll path otherwise, and only one of them is worth driving here.
+window.matchMedia = (q) => ({
+  matches: /min-width/.test(q),
+  media: q,
+  addEventListener() {},
+  removeEventListener() {},
+  addListener() {},
+  removeListener() {}
+});
 window.scrollTo = () => {};
 
 const results = [];
@@ -77,14 +86,48 @@ if (dome) {
   const closeBtn = dome.querySelector('.dome-close');
   check('dome has a close button', !!closeBtn);
 
-  // Open it the way main.js does, then click close.
-  dome.hidden = false;
+  /* Open it the way a visitor does, not by setting `hidden` by hand. main.js
+     makes the rest of the page inert while the dome is open, and that is the
+     part that broke: it marks every child of <body> except the dome, so behind
+     a wrapper element the dome ended up inside the inert subtree and the whole
+     page stopped responding. Only the real open path exercises that. */
+  window.dispatchEvent(new window.Event('mouseout'));
+  const mouseout = new window.MouseEvent('mouseout', { bubbles: true, clientY: 0 });
+  Object.defineProperty(mouseout, 'relatedTarget', { value: null });
+  doc.dispatchEvent(mouseout);
+
+  check('the dome opens on its own trigger', dome.hidden === false, `hidden: ${dome.hidden}`);
+
+  // Nothing containing the dome may be inert, or the popup cannot be clicked.
+  const inertAncestor = (() => {
+    let el = dome.parentElement;
+    while (el) {
+      if (el.hasAttribute?.('inert')) return el;
+      el = el.parentElement;
+    }
+    return null;
+  })();
+  check(
+    'no ancestor of the dome is inert',
+    !inertAncestor,
+    inertAncestor ? `<${inertAncestor.tagName.toLowerCase()}> is inert` : 'clear'
+  );
+  check('the dome itself is not inert', !dome.hasAttribute('inert'));
+
   const before = dome.hidden;
   closeBtn?.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
   check(
     'clicking the close button closes the dome',
     before === false && dome.hidden === true,
     `hidden: ${before} -> ${dome.hidden}`
+  );
+
+  // Closing must hand the page back: nothing left inert.
+  const stillInert = [...doc.body.children].filter((el) => el.hasAttribute('inert'));
+  check(
+    'closing releases the rest of the page',
+    stillInert.length === 0,
+    stillInert.length ? `${stillInert.length} still inert` : 'all released'
   );
 
   // Escape should close it too.

@@ -519,7 +519,16 @@ reads, so this is a visual comparison, not a code one.
 - [ ] The nav is the real one: hover a top-level item and the dropdown opens;
       narrow the window and the burger opens the mobile menu.
 - [ ] Scroll — the nav compacts past 50px and sections fade in.
-- [ ] The newsletter popup closes: click the ×, click the backdrop, press Escape.
+- [ ] Wait for the newsletter popup, or move the pointer off the top of the
+      window to trigger it. It must close on the ×, on a backdrop click and on
+      Escape — **and the rest of the page must be clickable again afterwards.**
+
+That last clause is the real test. While the dome is open, `main.js` makes the
+page inert by marking every child of `<body>` except the dome. If anything
+wraps the page, that wrapper is the child being marked and it contains the dome,
+so the popup and the cookie button and everything else stop responding. This is
+why `src/app.html` renders `%sveltekit.body%` directly rather than inside
+SvelteKit's usual `display:contents` div.
 
 Those last two broke once and have a regression test now:
 

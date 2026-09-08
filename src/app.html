@@ -23,6 +23,9 @@
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">
-    <div style="display:contents">%sveltekit.body%</div>
+    <!-- No display:contents wrapper: main.js makes the page inert while the
+         newsletter dome is open by marking every child of <body> except the
+         dome, and a wrapper would contain the dome too. -->
+    %sveltekit.body%
   </body>
 </html>
