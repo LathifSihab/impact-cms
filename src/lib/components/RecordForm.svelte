@@ -71,6 +71,7 @@
 <form
   method="POST"
   action="?/save"
+  enctype="multipart/form-data"
   use:enhance={() => {
     busy = true;
     return async ({ update }) => {

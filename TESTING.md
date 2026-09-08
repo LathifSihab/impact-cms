@@ -540,11 +540,58 @@ The important one.
 Enforced by the RLS policy, not by the template. A page that forgot to filter
 still could not render an unapproved name.
 
-## Missing images are expected
+## Images
 
-`assets/img/...` 404s and the placeholder colour shows, because only the
-stylesheet was copied into this repo. Drop the original repo's `assets/` into
-`cms/static/` if you want the pages to look finished.
+Image fields are uploads. Files land in `cms/uploads/<table>/<record-id>/`.
+
+Run the migration once after seeding:
+
+```bash
+npm run images:migrate
+```
+
+Expect `9 gekopieerd, 7 al in orde, 27 niet gevonden`. The nine are the partner
+logos, which are in the handoff. The 27 are the photography, which is not — those
+paths are listed and left untouched rather than blanked, so you can still see
+what a record wanted. Point `--source` at the original repo to finish the job.
+
+- [ ] After migrating, `/admin/content/partners/boshi` shows the logo as a
+      thumbnail, not a path in a text box.
+- [ ] `uploads/partners/boshi/` contains one file named `logo-<hash>.png`.
+- [ ] Upload a new image on an event: the preview appears immediately, before
+      saving, and says "nog niet bewaard".
+- [ ] Save, then check `uploads/events/<slug>/` — the file is there and the
+      public page shows it.
+- [ ] Replace it. The old file is **deleted**, not left behind.
+- [ ] Delete the record. Its whole folder goes with it.
+- [ ] An event whose photo is still a legacy path shows "oud pad uit de
+      statische site" rather than a silently broken image.
+
+### The upload checks that matter
+
+```bash
+# a text file renamed .png must be refused — type comes from the magic number,
+# not from the Content-Type the client claims
+printf 'not an image' > fake.png
+curl -s -b jar.txt -X POST "$BASE/admin/content/partners/boshi?/save" \
+  -F "name=Boshi" -F "url=https://example.com" -F "logo=" \
+  -F "logo__file=@fake.png;type=image/png"
+```
+
+Expect `"Alleen JPG, PNG, WebP, AVIF of GIF."`
+
+```bash
+# path traversal on the serving route
+for p in "../../../.env" "..%2f..%2f..%2f.env" "partners/../../../package.json"; do
+  curl -s -o /dev/null -w "%{http_code}\n" --path-as-is "$BASE/uploads/$p"
+done
+```
+
+Expect `404` for all three.
+
+**On Git Bash, export `MSYS_NO_PATHCONV=1` before these.** It rewrites a leading
+`/uploads/...` argument into `C:/Program Files/Git/uploads/...`, which makes the
+orphan-cleanup test silently pass for the wrong reason — it cost time here.
 
 ---
 

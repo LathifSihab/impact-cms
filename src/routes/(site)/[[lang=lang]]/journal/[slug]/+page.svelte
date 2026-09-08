@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDate, path, translator } from '$lib/i18n';
+  import { formatDate, imageUrl, path, translator } from '$lib/i18n';
   import { renderMarkdown } from '$lib/markdown';
   import type { PageData } from './$types';
 
@@ -30,7 +30,7 @@
 
 <div class="wrap" style="max-width:820px">
   <img
-    src="/{post.image}"
+    src={imageUrl(post.image)}
     alt={post.alt}
     style="width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)"
   />

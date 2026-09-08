@@ -7,7 +7,7 @@
    * all nine links on the events list point at it. Here every edition has its own
    * URL, rendered from its own row, and adding one needs no rebuild.
    */
-  import { path, translator } from '$lib/i18n';
+  import { imageUrl, path, translator } from '$lib/i18n';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -108,7 +108,7 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px">
           {#each e.gallery as g (g.src)}
             <figure style="margin:0">
-              <img src="/{g.src}" alt={g.alt} loading="lazy" style="aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)" />
+              <img src={imageUrl(g.src)} alt={g.alt} loading="lazy" style="aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)" />
               <figcaption class="meta" style="font-size:12px;margin-top:6px">{g.alt}</figcaption>
             </figure>
           {/each}

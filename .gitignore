@@ -5,3 +5,8 @@ build
 .env
 .env.*
 !.env.example
+
+# uploaded images — see README. Deliberately not committed: the photography
+# includes minors whose written parental consent is not held, and this repo is
+# public. Back the folder up with the rest of the deploy, not with git.
+uploads/

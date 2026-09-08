@@ -80,6 +80,7 @@ scripts/seed.ts        loads reference/content/ — the real events, journal,
                        partners, experts, formats, foundations, tiers, figures
 scripts/create-user.ts makes a login
 scripts/env-local.ts   writes .env from the running local stack
+scripts/migrate-images.ts  legacy assets/... paths -> managed uploads
 src/lib/collections.ts THE FILE TO READ FIRST. Ten content types, every field
 src/lib/records.ts     form → row, and the Dutch validation messages
 src/lib/server/        database access, and the Brevo / Ticket Tailor reads
@@ -184,11 +185,54 @@ Translation is a fallback, not a pairing: the model stores one row per language,
 so an English page with no English row shows the Dutch text with English chrome.
 Fixing that properly is still the open item below.
 
+## Images
+
+Image fields are uploads, not typed paths. Files are written to `cms/uploads/`,
+one folder per record:
+
+```
+uploads/<table>/<record-id>/<field>-<content-hash>.<ext>
+```
+
+so everything belonging to one edition sits together, and deleting the record
+takes its folder with it. Filenames carry a content hash rather than the name the
+browser sent, which removes collisions, other people's spelling, and the usual
+route for a traversal.
+
+`npm run images:migrate` moves the seeded `assets/...` paths into that layout and
+rewrites the columns. It is idempotent. The photography is not in the handoff, so
+27 of the 36 references have no file to copy — those are listed and left
+untouched rather than blanked. Point it at the original repo to finish:
+
+```bash
+npm run images:migrate -- --source /path/to/original/site/assets
+npm run images:migrate -- --dry-run          # report only
+```
+
+### Three things here that were decided, not defaulted
+
+**Not `static/`.** That directory is copied into the build output when the
+adapter runs, so a file written at runtime would never be served from it.
+`routes/uploads/[...path]` serves the folder instead, refusing traversal by
+checking the resolved absolute path rather than the string.
+
+**Not committed.** `uploads/` is gitignored. This repo is public and the
+photography includes minors whose written parental consent 01-BRIEF records as
+never provided — committing it is exactly the harm the consent gates exist to
+prevent. Back the folder up with the deploy, not with git.
+
+**Not on Vercel as it stands.** A folder on disk needs a real volume, and
+Vercel's runtime filesystem is read-only and ephemeral: uploads will appear to
+work and then vanish. Deploy to a host with a mounted volume, or reimplement
+`save`, `remove` and `publicPath` in `src/lib/server/uploads.ts` against Supabase
+Storage — everything else is behind that one module.
+
+SVG is rejected. It is an image to a designer and a script host to a browser, and
+these files are served from the same origin as the backoffice. Type is decided by
+magic number, not by the `Content-Type` the client claims.
+
 ## Not done
 
-- **Image uploads.** Images are still path strings pointing at `assets/img/...`,
-  which is what the static site resolves. Supabase Storage is the obvious home,
-  but the existing paths have to keep working.
 - **Translation pairing.** `locale` is still one record per language rather than
   paired translations, exactly as the current model has it.
   `05-DESIGN-SYSTEM.md` says this is the one thing worth

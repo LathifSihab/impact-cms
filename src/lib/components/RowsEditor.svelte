@@ -9,6 +9,7 @@
    * be possible without a drag library.
    */
   import type { RowColumn } from '$lib/collections';
+  import ImageInput from './ImageInput.svelte';
 
   let {
     name,
@@ -61,7 +62,11 @@
       {#each columns as col (col.name)}
         <div class="field">
           <label for="{name}-{i}-{col.name}">{col.label}</label>
-          {#if col.kind === 'textarea'}
+          {#if col.kind === 'image'}
+            <!-- The row's own value stays in the JSON payload; the file posts
+                 under the index the server expects. -->
+            <ImageInput name="{name}__row__{i}" value={item[col.name] ?? ''} />
+          {:else if col.kind === 'textarea'}
             <textarea
               id="{name}-{i}-{col.name}"
               bind:value={item[col.name]}

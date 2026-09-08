@@ -36,7 +36,8 @@ export type CollectionKey =
 export interface RowColumn {
   name: string;
   label: string;
-  kind?: 'text' | 'textarea';
+  /** 'image' turns the cell into an upload control; the stored value is a path. */
+  kind?: 'text' | 'textarea' | 'image';
   placeholder?: string;
 }
 
@@ -264,8 +265,7 @@ export const COLLECTIONS: Record<CollectionKey, Collection> = {
         label: 'Hero-afbeelding',
         kind: 'image',
         required: true,
-        group: 'Beeld',
-        placeholder: 'assets/img/court-169.jpg'
+        group: 'Beeld'
       },
       { name: 'hero_video', label: 'Hero-video', kind: 'image', group: 'Beeld', placeholder: 'assets/video/...' },
       {
@@ -275,7 +275,7 @@ export const COLLECTIONS: Record<CollectionKey, Collection> = {
         addLabel: 'Beeld toevoegen',
         group: 'Beeld',
         columns: [
-          { name: 'src', label: 'Pad', placeholder: 'assets/img/camp/court-169.jpg' },
+          { name: 'src', label: 'Afbeelding', kind: 'image' },
           { name: 'alt', label: 'Alt-tekst' }
         ]
       },
@@ -430,7 +430,7 @@ export const COLLECTIONS: Record<CollectionKey, Collection> = {
     fields: [
       { name: 'name', label: 'Naam', kind: 'text', required: true },
       { name: 'url', label: 'Website', kind: 'url', required: true, placeholder: 'https://' },
-      { name: 'logo', label: 'Logo', kind: 'image', required: true, placeholder: 'assets/brand/partners/....png' },
+      { name: 'logo', label: 'Logo', kind: 'image', required: true },
       { name: 'tier', label: 'Partnerniveau', kind: 'ref', to: 'tiers', half: true },
       { name: 'sort_order', label: 'Volgorde', kind: 'number', integer: true, default: 0, half: true },
       { name: 'is_host', label: 'Is host van een Hosted Experience', kind: 'bool' }

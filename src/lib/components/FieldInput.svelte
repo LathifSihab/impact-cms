@@ -13,6 +13,7 @@
   import RowsEditor from './RowsEditor.svelte';
   import TagsEditor from './TagsEditor.svelte';
   import RefsPicker from './RefsPicker.svelte';
+  import ImageInput from './ImageInput.svelte';
 
   let {
     field,
@@ -66,7 +67,7 @@
   </div>
 {:else}
   <div class="field" class:field--invalid={!!error}>
-    {#if field.kind === 'rows' || field.kind === 'tags' || field.kind === 'choices' || field.kind === 'refs' || field.kind === 'object'}
+    {#if field.kind === 'rows' || field.kind === 'tags' || field.kind === 'choices' || field.kind === 'refs' || field.kind === 'object' || field.kind === 'image'}
       <span class="lab">{field.label}{#if field.required}<span class="req">*</span>{/if}</span>
     {:else}
       <label for={id}>{field.label}{#if field.required}<span class="req">*</span>{/if}</label>
@@ -146,8 +147,9 @@
           {/each}
         </div>
       </div>
+    {:else if field.kind === 'image'}
+      <ImageInput name={field.name} value={text} required={!!field.required && !text} />
     {:else}
-      <!-- text, image -->
       <input {id} type="text" name={field.name} value={text} placeholder={field.placeholder ?? ''} />
     {/if}
 

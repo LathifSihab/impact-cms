@@ -189,3 +189,19 @@ export function formatDate(iso: string, locale: Locale): string {
     year: 'numeric'
   });
 }
+
+/**
+ * Turn a stored image value into a URL the browser can fetch.
+ *
+ * Two shapes live in these columns. Uploaded files are absolute already
+ * (`/uploads/...`); legacy values from the static site are relative
+ * (`assets/img/...`). Prefixing the first with another slash yields
+ * `//uploads/...`, which a browser reads as protocol-relative and sends to a
+ * host called "uploads" — so the distinction has to be made, not assumed.
+ */
+export function imageUrl(stored: string | null | undefined): string {
+  const value = (stored ?? '').trim();
+  if (!value) return '';
+  if (/^(https?:)?\/\//.test(value)) return value;
+  return value.startsWith('/') ? value : `/${value}`;
+}

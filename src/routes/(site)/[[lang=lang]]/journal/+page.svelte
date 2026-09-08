@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDate, path, translator } from '$lib/i18n';
+  import { formatDate, imageUrl, path, translator } from '$lib/i18n';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -29,7 +29,7 @@
         {#each data.posts as post (post.id)}
           <a href={p(`/journal/${post.id}`)} style="background:var(--white);display:block">
             <img
-              src="/{post.image}"
+              src={imageUrl(post.image)}
               alt={post.alt}
               loading="lazy"
               style="aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)"

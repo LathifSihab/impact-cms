@@ -8,6 +8,8 @@ import {
   optionsFor,
   saveRecord
 } from '$lib/server/content';
+import { applyUploads, cleanupOrphans } from '$lib/server/form-uploads';
+import { removeRecordFolder } from '$lib/server/uploads';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, url }) => {
@@ -31,14 +33,22 @@ export const actions: Actions = {
     if (!collection) error(404, 'Dit inhoudstype bestaat niet.');
 
     const form = await request.formData();
-    const { row, refs, errors } = parseRecord(collection, form, params.id);
 
-    if (Object.keys(errors).length) {
-      return fail(400, { errors, record: { ...row, ...refs, id: params.id } });
+    // See the note in the create action: uploads run before validation so the
+    // field already holds its stored path by the time it is checked.
+    const uploaded = await applyUploads(collection, params.id, form);
+    const { row, refs, errors } = parseRecord(collection, form, params.id);
+    const allErrors = { ...uploaded.errors, ...errors };
+
+    if (Object.keys(allErrors).length) {
+      return fail(400, { errors: allErrors, record: { ...row, ...refs, id: params.id } });
     }
 
     try {
       await saveRecord(locals.supabase, collection, params.id, row, refs, { create: false });
+      // Only once the row is safely written — otherwise a failed save would
+      // have deleted the image it still points at.
+      await cleanupOrphans(uploaded.orphaned);
     } catch (e) {
       const err = e as ContentError;
       return fail(400, {
@@ -57,6 +67,9 @@ export const actions: Actions = {
 
     try {
       await deleteRecord(locals.supabase, collection, params.id);
+      // The record is gone, so its folder of images is unreachable. Removing it
+      // here is the only chance; nothing else knows those files existed.
+      await removeRecordFolder(collection.table, params.id);
     } catch (e) {
       const err = e as ContentError;
       return fail(400, { problem: { message: err.message, detail: err.detail } });

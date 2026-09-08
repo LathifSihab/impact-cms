@@ -11,7 +11,8 @@
     "db:reset": "supabase db reset",
     "env:local": "node scripts/env-local.ts",
     "seed": "node scripts/seed.ts",
-    "user:create": "node scripts/create-user.ts"
+    "user:create": "node scripts/create-user.ts",
+    "images:migrate": "node scripts/migrate-images.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.7",
