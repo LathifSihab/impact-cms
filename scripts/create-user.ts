@@ -9,6 +9,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { envHelp } from './env-help.ts';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,7 +35,7 @@ if (!email || !password) {
   process.exit(1);
 }
 if (!url || !serviceKey) {
-  console.error('PUBLIC_SUPABASE_URL en SUPABASE_SERVICE_ROLE_KEY zijn nodig.');
+  console.error(envHelp(root));
   process.exit(1);
 }
 if (password.length < 10) {

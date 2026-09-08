@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "db:reset": "supabase db reset",
+    "env:local": "node scripts/env-local.ts",
     "seed": "node scripts/seed.ts",
     "user:create": "node scripts/create-user.ts"
   },

@@ -45,13 +45,19 @@ The ports are deliberately not the defaults (54361 API, 54362 db, 54363 Studio),
 because another local Supabase project may already hold 54321–54327.
 
 ```bash
-cp .env.example .env
+npm run env:local       # writes .env from the running stack
 ```
 
-Fill in from `supabase status`: `PUBLIC_SUPABASE_URL` = the API URL,
-`PUBLIC_SUPABASE_ANON_KEY` = `ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` =
-`SERVICE_ROLE_KEY`. Leave `BREVO_API_KEY` and `TICKET_TAILOR_API_KEY` empty —
-step 9 checks what happens when they are missing, which is the interesting case.
+**Do not `cp .env.example .env`.** The template has empty values, so the copy
+configures you with nothing, and running it over a working `.env` wipes it. The
+symptom either way is `Your project's URL and Key are required to create a
+Supabase client` on every page, plus both scripts refusing to run.
+
+Leave `BREVO_API_KEY` and `TICKET_TAILOR_API_KEY` empty — step 9 checks what
+happens when they are missing, which is the interesting case.
+
+`.env` is read when the dev server **starts**. If you change it, restart
+`npm run dev` or nothing happens.
 
 ```bash
 npm run seed

@@ -23,8 +23,8 @@ npm install
 supabase start                      # needs Docker
 supabase db reset                   # applies supabase/migrations/
 
-# 2. credentials — `supabase status` prints them for the local stack
-cp .env.example .env                # then fill in URL, anon key, service role key
+# 2. credentials — writes .env from the running local stack
+npm run env:local
 
 # 3. the client's real content — it lives in the handoff folder, not in this
 #    repo. Point at it if this repo is not sitting inside that folder:
@@ -36,6 +36,14 @@ npm run user:create -- you@example.com 'a real password'
 
 npm run dev                         # http://localhost:5273
 ```
+
+Do **not** `cp .env.example .env`. That template ships with empty values, so the
+copy leaves you configured with nothing — and running it a second time silently
+overwrites a working `.env`. Both look identical from the app: *"Your project's
+URL and Key are required to create a Supabase client"*. `npm run env:local`
+reads the running stack and writes the file, keeping any Brevo or Ticket Tailor
+key already in there. For a hosted project, fill `.env` in by hand from Project
+Settings → API.
 
 Two things about the local stack that cost time here, both already applied to
 `supabase/config.toml`:
@@ -65,6 +73,7 @@ supabase/migrations/   the schema, then the RLS policies
 scripts/seed.ts        loads reference/content/ — the real events, journal,
                        partners, experts, formats, foundations, tiers, figures
 scripts/create-user.ts makes a login
+scripts/env-local.ts   writes .env from the running local stack
 src/lib/collections.ts THE FILE TO READ FIRST. Ten content types, every field
 src/lib/records.ts     form → row, and the Dutch validation messages
 src/lib/server/        database access, and the Brevo / Ticket Tailor reads
