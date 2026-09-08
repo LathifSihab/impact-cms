@@ -1,0 +1,905 @@
+/* IMPACT backoffice.
+   Tokens copied verbatim from assets/css/style.css so the CMS is the same
+   product as the site: bone grounds, near-black type, red reserved for action
+   and emphasis, small uppercase bracket labels, square everything except pills.
+
+   The site's own .field / .err / .pill classes are reused by name where they fit,
+   because a backoffice that looks like a default admin template is the fastest
+   way to make a finished project feel unfinished. */
+
+:root {
+  --white: #ffffff;
+  --bone: #f4f2eb;
+  --bone-card: #faf9f4;
+  --ink: #0f1015;
+  --red: #ca0013;
+  --red-dark: #9e000f;
+  --burgundy: #560216;
+  --burgundy-card: #631628;
+  --grey-warm: #8d877d;
+  --grey-body: #6b665e;
+  --grey-muted: #a09a90;
+  --border: #e7e4db;
+  --border-sand: #dad5ca;
+  --placeholder: #e2ddd4;
+
+  --font-display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+  --font-text: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --t-body: 16px;
+  --t-meta: 12px;
+  --t-rule: 10px;
+
+  --dur-fast: 150ms;
+  --ease: ease-out;
+
+  --sidebar: 232px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-text);
+  color: var(--ink);
+  background: var(--bone);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* ---------- type roles ---------- */
+.label {
+  font-size: var(--t-rule);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--grey-warm);
+  line-height: 1;
+}
+.tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--red);
+}
+.tag--dim {
+  color: var(--grey-warm);
+}
+.d-m {
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+.h {
+  font-size: 20px;
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+.meta {
+  font-size: 13px;
+  color: var(--grey-warm);
+}
+.body {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--grey-body);
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.red {
+  color: var(--red);
+}
+
+/* ---------- pills ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+.pill--primary {
+  background: var(--red);
+  color: #fff;
+}
+.pill--primary:hover {
+  background: var(--red-dark);
+  transform: translateY(-1px);
+}
+.pill--secondary {
+  background: transparent;
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.pill--secondary:hover {
+  background: var(--ink);
+  color: #fff;
+}
+.pill--quiet {
+  background: transparent;
+  border-color: var(--border-sand);
+  color: var(--grey-body);
+}
+.pill--quiet:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.pill--danger {
+  background: transparent;
+  border-color: var(--border-sand);
+  color: var(--red);
+}
+.pill--danger:hover {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.pill--sm {
+  height: 34px;
+  padding: 0 16px;
+  font-size: 11.5px;
+}
+.pill[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- shell ---------- */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar) minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.side {
+  background: var(--ink);
+  color: #fff;
+  padding: 28px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.side .brand {
+  padding: 0 24px;
+  display: block;
+}
+.side .brand strong {
+  font-family: var(--font-display);
+  font-size: 19px;
+  letter-spacing: -0.01em;
+  display: block;
+  line-height: 1;
+}
+.side .brand span {
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+  display: block;
+  margin-top: 7px;
+}
+.side .group {
+  padding: 0 24px;
+}
+.side .group > .label {
+  color: rgba(255, 255, 255, 0.35);
+  margin-bottom: 12px;
+  display: block;
+}
+.side nav a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.72);
+  transition: color var(--dur-fast) var(--ease);
+}
+.side nav a:hover {
+  color: #fff;
+}
+.side nav a[aria-current='page'] {
+  color: #fff;
+  font-weight: 700;
+}
+.side nav a[aria-current='page']::before {
+  content: '';
+  width: 3px;
+  align-self: stretch;
+  background: var(--red);
+  margin-left: -24px;
+  margin-right: 21px;
+}
+.side nav a .count {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  font-family: var(--mono);
+}
+.side .foot {
+  margin-top: auto;
+  padding: 0 24px;
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.38);
+  line-height: 1.6;
+}
+.side .foot a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.topbar .who {
+  font-size: 12.5px;
+  color: var(--grey-warm);
+}
+
+.page {
+  padding: 40px;
+  max-width: 1160px;
+  width: 100%;
+}
+.page > header {
+  margin-bottom: 30px;
+}
+.page > header .label {
+  display: block;
+  margin-bottom: 14px;
+}
+.page > header h1 {
+  margin-bottom: 10px;
+}
+.page > header .body {
+  max-width: 68ch;
+}
+
+.head-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* ---------- cards & tables ---------- */
+.card {
+  background: var(--white);
+  border: 1px solid var(--border);
+}
+.card + .card {
+  margin-top: 20px;
+}
+
+.rows {
+  background: var(--white);
+  border: 1px solid var(--border);
+}
+.rows a.row,
+.rows .row {
+  display: grid;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  transition: background var(--dur-fast) var(--ease);
+}
+.rows .row:first-child,
+.rows a.row:first-child {
+  border-top: 0;
+}
+.rows a.row:hover {
+  background: var(--bone-card);
+}
+.rows .row .name {
+  font-weight: 700;
+  font-size: 15.5px;
+  letter-spacing: -0.01em;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rows .row .cell {
+  font-size: 13.5px;
+  color: var(--grey-body);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.rows .row .cell.num {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.empty {
+  background: var(--white);
+  border: 1px solid var(--border);
+  padding: 44px 32px;
+  text-align: center;
+}
+.empty .body {
+  max-width: 46ch;
+  margin: 10px auto 0;
+}
+
+/* ---------- badges ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border: 1px solid var(--border-sand);
+  color: var(--grey-body);
+  white-space: nowrap;
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.badge--waitlist {
+  color: var(--red);
+  border-color: rgba(202, 0, 19, 0.32);
+}
+.badge--open {
+  color: #1f6b34;
+  border-color: rgba(31, 107, 52, 0.32);
+}
+.badge--full {
+  color: var(--burgundy);
+  border-color: rgba(86, 2, 22, 0.28);
+}
+.badge--past {
+  color: var(--grey-muted);
+}
+.badge--yes {
+  color: #1f6b34;
+  border-color: rgba(31, 107, 52, 0.32);
+}
+.badge--no {
+  color: var(--red);
+  border-color: rgba(202, 0, 19, 0.32);
+}
+
+/* ---------- forms ---------- */
+.field {
+  margin: 0 0 22px;
+}
+.field > label,
+.field > .lab {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--grey-warm);
+  margin-bottom: 8px;
+}
+.field .req {
+  color: var(--red);
+  margin-left: 4px;
+}
+.field input[type='text'],
+.field input[type='email'],
+.field input[type='password'],
+.field input[type='url'],
+.field input[type='number'],
+.field input[type='date'],
+.field select,
+.field textarea {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--border-sand);
+  background: none;
+  padding: 8px 0;
+  font-size: 15px;
+  outline: none;
+  border-radius: 0;
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.field textarea {
+  resize: vertical;
+  min-height: 88px;
+  line-height: 1.6;
+}
+.field textarea.tall {
+  min-height: 260px;
+  font-family: var(--mono);
+  font-size: 13px;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--ink);
+}
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--grey-muted);
+}
+.field .err {
+  display: block;
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.field .hint {
+  display: block;
+  font-size: 12.5px;
+  color: var(--grey-warm);
+  margin-top: 7px;
+  line-height: 1.55;
+}
+.field--invalid input,
+.field--invalid select,
+.field--invalid textarea {
+  border-color: var(--red);
+}
+
+.field--check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+.field--check input {
+  margin-top: 3px;
+  width: 17px;
+  height: 17px;
+  accent-color: var(--red);
+  flex: none;
+}
+.field--check label {
+  font-size: 14px;
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+  margin: 0;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+}
+.grid2 > .full {
+  grid-column: 1 / -1;
+}
+
+fieldset.fs {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0;
+  padding: 30px 0 8px;
+}
+fieldset.fs:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
+}
+fieldset.fs > legend {
+  padding: 0 14px 0 0;
+  font-size: var(--t-rule);
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--grey-warm);
+  margin-bottom: 18px;
+}
+
+.form-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  padding: 32px 36px;
+}
+
+.actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--ink);
+  padding: 16px 24px;
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.actions .spacer {
+  margin-left: auto;
+}
+
+/* ---------- repeatable rows editor ---------- */
+.rep {
+  border: 1px solid var(--border);
+}
+.rep .rep-item {
+  border-top: 1px solid var(--border);
+  padding: 18px 20px;
+  display: grid;
+  gap: 0 20px;
+  align-items: start;
+}
+.rep .rep-item:first-child {
+  border-top: 0;
+}
+.rep .rep-item .rep-no {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--grey-muted);
+  padding-top: 26px;
+}
+.rep .rep-tools {
+  display: flex;
+  gap: 6px;
+  padding-top: 20px;
+}
+.rep .rep-empty {
+  padding: 20px;
+  color: var(--grey-warm);
+  font-size: 13.5px;
+}
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-sand);
+  background: none;
+  color: var(--grey-body);
+  cursor: pointer;
+  line-height: 1;
+  font-size: 13px;
+  transition: all var(--dur-fast) var(--ease);
+}
+.icon-btn:hover:not([disabled]) {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.icon-btn[disabled] {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.icon-btn.rm:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+.rep-add {
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- tag / choice editors ---------- */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-sand);
+  padding: 6px 10px;
+  font-size: 13px;
+  background: var(--bone-card);
+}
+.chip button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--grey-warm);
+  padding: 0;
+  line-height: 1;
+  font-size: 15px;
+}
+.chip button:hover {
+  color: var(--red);
+}
+.chip-add {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.chip-add input {
+  flex: 1;
+  min-width: 0;
+}
+
+.picker {
+  border: 1px solid var(--border);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.picker .opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 14px;
+}
+.picker .opt:first-child {
+  border-top: 0;
+}
+.picker .opt:hover {
+  background: var(--bone-card);
+}
+.picker .opt input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--red);
+  flex: none;
+}
+.picker .opt .sub {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--grey-muted);
+  font-family: var(--mono);
+}
+
+/* ---------- the consent gate ---------- */
+/* Deliberately the loudest thing on the page. `confirmed` and `consentOnFile`
+   are not soft-delete flags — they mean a human verified that a named real
+   person may be published. 03-DATA-MODEL.md and 07-DECISIONS.md both insist the
+   tick is explicit, so it does not get styled like every other checkbox. */
+.gate {
+  border: 1px solid rgba(202, 0, 19, 0.35);
+  background: var(--bone-card);
+  padding: 22px 24px;
+  margin: 26px 0 6px;
+}
+.gate.on {
+  border-color: rgba(31, 107, 52, 0.4);
+}
+.gate .gate-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.gate .gate-head .label {
+  color: var(--red);
+}
+.gate.on .gate-head .label {
+  color: #1f6b34;
+}
+.gate .field--check {
+  margin: 0;
+}
+.gate .field--check label {
+  font-weight: 700;
+}
+.gate .why {
+  font-size: 13px;
+  color: var(--grey-body);
+  line-height: 1.6;
+  margin-top: 10px;
+  padding-left: 29px;
+}
+
+/* ---------- notices ---------- */
+.notice {
+  border: 1px solid var(--border-sand);
+  border-left: 3px solid var(--grey-warm);
+  background: var(--white);
+  padding: 16px 20px;
+  font-size: 13.5px;
+  color: var(--grey-body);
+  line-height: 1.6;
+  margin-bottom: 22px;
+}
+.notice strong {
+  color: var(--ink);
+}
+.notice--red {
+  border-left-color: var(--red);
+}
+.notice--ok {
+  border-left-color: #1f6b34;
+}
+
+/* ---------- login ---------- */
+.login {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+.login .pane {
+  background: var(--ink);
+  color: #fff;
+  padding: 64px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.login .pane h1 {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+.login .pane p {
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 42ch;
+  margin-top: 20px;
+  font-size: 15px;
+}
+.login .form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  background: var(--bone);
+}
+.login .form form {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* ---------- stat tiles (dashboard) ---------- */
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+.tile {
+  background: var(--white);
+  padding: 24px;
+}
+.tile .n {
+  font-size: 38px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.tile .k {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--grey-warm);
+  margin-top: 10px;
+}
+.tile.alert .n {
+  color: var(--red);
+}
+
+/* ---------- responsive ----------
+   Desktop-first is defensible for a backoffice, but the client will open it on a
+   phone during the demo, so the list views have to survive 390px. */
+@media (max-width: 900px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+  .side {
+    position: static;
+    height: auto;
+    flex-direction: column;
+  }
+  .side nav a[aria-current='page']::before {
+    display: none;
+  }
+  .page,
+  .topbar {
+    padding: 24px 18px;
+  }
+  .grid2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .login {
+    grid-template-columns: 1fr;
+  }
+  .login .pane {
+    padding: 40px 24px;
+  }
+  .form-card {
+    padding: 22px 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  .rows a.row,
+  .rows .row {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 6px;
+    padding: 14px 16px;
+  }
+  .rows .row .cell.hide-sm {
+    display: none;
+  }
+  .rep .rep-item {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  .rep .rep-item .rep-no {
+    padding-top: 0;
+  }
+  .rep .rep-tools {
+    padding-top: 4px;
+  }
+}
