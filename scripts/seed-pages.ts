@@ -306,7 +306,7 @@ for (const [i, page] of PAGES.entries()) {
       seo,
       published: true
     },
-    { onConflict: 'id' }
+    { onConflict: 'id,locale' }
   );
   if (error) {
     failed = true;
@@ -319,6 +319,7 @@ for (const [i, page] of PAGES.entries()) {
     const { error: secErr } = await db.from('page_sections').insert(
       sections.map((s, position) => ({
         page_id: page.id,
+        locale: 'nl',
         position,
         type: s.type,
         ground: s.ground,
@@ -338,6 +339,239 @@ for (const [i, page] of PAGES.entries()) {
       (skipped.length ? `   (${skipped.length} niet herkend)` : '')
   );
   for (const s of skipped) console.log(`  ${' '.repeat(20)} · ${s}`);
+}
+
+
+/* --- events and journal ---------------------------------------------------
+ *
+ * These two are not lifted from HTML like the others. Their layout is fixed —
+ * the list of editions comes from the events content type, not from sections —
+ * so what is configurable is the copy in the named slots around it, addressed
+ * by anchor rather than by position.
+ *
+ * They are seeded in both languages, because the English strings for these
+ * pages previously lived in lib/i18n.ts and belong with the rest of the page
+ * copy now.
+ */
+
+interface ListPage {
+  id: string;
+  navLabel: string;
+  sortOrder: number;
+  locale: 'nl' | 'en';
+  hero: { label: string; title: string; intro: string };
+  seo: { title: string; description: string };
+  slots: { anchor: string; type: string; content: Record<string, string> }[];
+}
+
+const LIST_PAGES: ListPage[] = [
+  {
+    id: 'events',
+    navLabel: 'Events (lijstpagina)',
+    sortOrder: 8,
+    locale: 'nl',
+    hero: {
+      label: '[ Events ]',
+      title: 'What can you experience?',
+      intro:
+        'Formats zijn de soorten experiences die IMPACT bouwt. Events zijn de concrete edities waarvoor je je kan inschrijven. Hieronder eerst wat eraan komt, daarna waarin we werken.'
+    },
+    seo: {
+      title: 'Events | IMPACT',
+      description: 'Camps, Days en Retreats. Elke editie heeft een eigen pagina.'
+    },
+    slots: [
+      {
+        anchor: 'upcoming',
+        type: 'sec_head',
+        content: {
+          running: 'Upcoming IMPACT events',
+          heading: 'Wat kan je binnenkort meemaken?',
+          lead: 'Data en locaties worden bevestigd zodra de wachtlijst voldoende groot is. Inschrijven op de wachtlijst is gratis en verplicht je tot niets.'
+        }
+      },
+      {
+        anchor: 'note',
+        type: 'rich_text',
+        content: {
+          running: '',
+          heading: '',
+          body: 'Deze events staan nog niet vast: of een editie doorgaat, hangt af van het aantal inschrijvingen op de wachtlijst.'
+        }
+      },
+      {
+        anchor: 'box-office',
+        type: 'rich_text',
+        content: {
+          running: '',
+          heading: '',
+          body: 'Tickets en inschrijvingen lopen via ons box office. Daar staan alle edities met hun actuele status.'
+        }
+      },
+      {
+        anchor: 'formats',
+        type: 'sec_head',
+        content: {
+          running: 'Onze formats',
+          heading: 'Het medium verandert. De fundamenten blijven.',
+          lead: 'Elk format vertrekt van dezelfde zes fundamenten. Wat verandert, is de duur, de intensiteit en de leeftijdsgroep.'
+        }
+      },
+      {
+        anchor: 'alle',
+        type: 'sec_head',
+        content: {
+          running: 'Alle events',
+          heading: 'Volledig overzicht',
+          lead: "Afgelopen edities blijven niet tussen de actieve events staan: ze verhuizen naar Journal als recap, met foto's, aftermovie en verhalen."
+        }
+      }
+    ]
+  },
+  {
+    id: 'events',
+    navLabel: 'Events (list page)',
+    sortOrder: 8,
+    locale: 'en',
+    hero: {
+      label: '[ Events ]',
+      title: 'What can you experience?',
+      intro:
+        'Formats are the kinds of experience IMPACT builds. Events are the concrete editions you can sign up for. Below: first what is coming, then what we work in.'
+    },
+    seo: {
+      title: 'Events | IMPACT',
+      description: 'Camps, Days and Retreats. Every edition has its own page.'
+    },
+    slots: [
+      {
+        anchor: 'upcoming',
+        type: 'sec_head',
+        content: {
+          running: 'Upcoming IMPACT events',
+          heading: 'What is coming up?',
+          lead: 'Dates and locations are confirmed once the waiting list is large enough. Joining it is free and commits you to nothing.'
+        }
+      },
+      {
+        anchor: 'note',
+        type: 'rich_text',
+        content: {
+          running: '',
+          heading: '',
+          body: 'These events are not fixed yet: whether an edition runs depends on how many people join the waiting list.'
+        }
+      },
+      {
+        anchor: 'box-office',
+        type: 'rich_text',
+        content: {
+          running: '',
+          heading: '',
+          body: 'Tickets and registration run through our box office, with every edition and its current status.'
+        }
+      },
+      {
+        anchor: 'formats',
+        type: 'sec_head',
+        content: {
+          running: 'Our formats',
+          heading: 'The medium changes. The foundations stay.',
+          lead: 'Every format starts from the same six foundations. What changes is duration, intensity and age group.'
+        }
+      },
+      {
+        anchor: 'alle',
+        type: 'sec_head',
+        content: {
+          running: 'All events',
+          heading: 'Full overview',
+          lead: 'Past editions do not stay among the active ones: they move to the Journal as a recap, with photos, aftermovie and stories.'
+        }
+      }
+    ]
+  },
+  {
+    id: 'journal',
+    navLabel: 'Journal (lijstpagina)',
+    sortOrder: 9,
+    locale: 'nl',
+    hero: {
+      label: '[ Journal ]',
+      title: 'What we lived, learned and built.',
+      intro:
+        'Journal is ons levende archief. Geen klassieke blog, maar alles wat er binnen IMPACT gebeurt of gebeurd is: recaps, verhalen, interviews, expert content, partnerverhalen en nieuws.'
+    },
+    seo: {
+      title: 'Journal | IMPACT',
+      description: 'Recaps, verhalen en inzichten van achter de schermen.'
+    },
+    slots: []
+  },
+  {
+    id: 'journal',
+    navLabel: 'Journal (list page)',
+    sortOrder: 9,
+    locale: 'en',
+    hero: {
+      label: '[ Journal ]',
+      title: 'What we lived, learned and built.',
+      intro:
+        'The Journal is our living archive. Not a blog, but everything happening inside IMPACT: recaps, stories, interviews, expert content, partner stories and news.'
+    },
+    seo: {
+      title: 'Journal | IMPACT',
+      description: 'Recaps, stories and insights from behind the scenes.'
+    },
+    slots: []
+  }
+];
+
+for (const lp of LIST_PAGES) {
+  const { error } = await db.from('pages').upsert(
+    {
+      id: lp.id,
+      locale: lp.locale,
+      nav_label: lp.navLabel,
+      sort_order: lp.sortOrder,
+      hero_label: lp.hero.label,
+      hero_title: lp.hero.title,
+      hero_intro: lp.hero.intro,
+      hero_image: null,
+      hero_variant: 'page',
+      seo: lp.seo,
+      published: true
+    },
+    { onConflict: 'id,locale' }
+  );
+  if (error) {
+    failed = true;
+    console.error(`  ${lp.id}/${lp.locale} FOUT — ${error.message}`);
+    continue;
+  }
+
+  await db.from('page_sections').delete().eq('page_id', lp.id).eq('locale', lp.locale);
+  if (lp.slots.length) {
+    const { error: secErr } = await db.from('page_sections').insert(
+      lp.slots.map((slot, position) => ({
+        page_id: lp.id,
+        locale: lp.locale,
+        position,
+        type: slot.type,
+        ground: 'white',
+        anchor: slot.anchor,
+        content: slot.content
+      }))
+    );
+    if (secErr) {
+      failed = true;
+      console.error(`  ${lp.id}/${lp.locale} secties FOUT — ${secErr.message}`);
+      continue;
+    }
+  }
+  console.log(
+    `  ${`${lp.id} (${lp.locale})`.padEnd(20)} ${String(lp.slots.length).padStart(2)} tekstblokken`
+  );
 }
 
 console.log(

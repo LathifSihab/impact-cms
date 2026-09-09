@@ -17,6 +17,8 @@
    * it, so it is reproduced here as written.
    */
   import { imageUrl, path, translator } from '$lib/i18n';
+  import PageSections from '$lib/components/site/PageSections.svelte';
+  import { sectionAt, extraSections } from '$lib/pages';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -24,6 +26,17 @@
   const t = $derived(translator(data.locale));
   const p = $derived((rest: string) => path(data.locale, rest));
   const nl = $derived(data.locale === 'nl');
+
+  /* Copy for the fixed slots comes from the `events` page, addressed by
+     anchor. A missing page or a missing slot falls back to the string that was
+     hardcoded here, so the page never renders blank because nobody has filled
+     the backoffice in yet. */
+  const cfg = $derived(data.page);
+  const slot = $derived((anchor: string, key: string, fallback: string) => {
+    const v = sectionAt(cfg, anchor)?.content?.[key];
+    return typeof v === 'string' && v.trim() ? v.trim() : fallback;
+  });
+  const SLOTS = ['upcoming', 'formats', 'alle', 'note', 'box-office'];
 
   const upcoming = $derived(data.events.filter((e) => e.status !== 'past'));
   /** Sections exist only for formats with body copy; Hosted links out instead. */
@@ -55,16 +68,13 @@
 <header class="hero hero--page" data-reveal-root>
   <div class="hero-content wrap">
     <div>
-      <span class="label reveal">[ Events ]</span>
-      <h1 class="d-xl reveal">What can you experience?</h1>
+      <span class="label reveal">{cfg?.heroLabel || '[ Events ]'}</span>
+      <h1 class="d-xl reveal">{cfg?.heroTitle || 'What can you experience?'}</h1>
       <p class="intro reveal">
-        {#if nl}
-          Formats zijn de soorten experiences die IMPACT bouwt. Events zijn de concrete edities
-          waarvoor je je kan inschrijven. Hieronder eerst wat eraan komt, daarna waarin we werken.
-        {:else}
-          Formats are the kinds of experience IMPACT builds. Events are the concrete editions you
-          can sign up for. Below: first what is coming, then what we work in.
-        {/if}
+        {cfg?.heroIntro ||
+          (nl
+            ? 'Formats zijn de soorten experiences die IMPACT bouwt. Events zijn de concrete edities waarvoor je je kan inschrijven.'
+            : 'Formats are the kinds of experience IMPACT builds. Events are the concrete editions you can sign up for.')}
       </p>
       <nav class="anchor-nav reveal" aria-label="Secties op deze pagina">
         <a href="#upcoming">{nl ? 'Upcoming events' : 'Upcoming events'}</a>
@@ -80,17 +90,19 @@
   <div class="wrap">
     <div class="sec-head" data-reveal>
       <div>
-        <span class="running">Upcoming IMPACT events</span>
-        <h2 class="d-l">{nl ? 'Wat kan je binnenkort meemaken?' : 'What is coming up?'}</h2>
+        <span class="running">{slot('upcoming', 'running', 'Upcoming IMPACT events')}</span>
+        <h2 class="d-l">
+          {slot('upcoming', 'heading', nl ? 'Wat kan je binnenkort meemaken?' : 'What is coming up?')}
+        </h2>
       </div>
       <p class="body">
-        {#if nl}
-          Data en locaties worden bevestigd zodra de wachtlijst voldoende groot is. Inschrijven op
-          de wachtlijst is gratis en verplicht je tot niets.
-        {:else}
-          Dates and locations are confirmed once the waiting list is large enough. Joining it is
-          free and commits you to nothing.
-        {/if}
+        {slot(
+          'upcoming',
+          'lead',
+          nl
+            ? 'Data en locaties worden bevestigd zodra de wachtlijst voldoende groot is.'
+            : 'Dates and locations are confirmed once the waiting list is large enough.'
+        )}
       </p>
     </div>
 
@@ -118,13 +130,13 @@
     {/each}
 
     <p class="note body">
-      {#if nl}
-        Deze events staan nog niet vast: of een editie doorgaat, hangt af van het aantal
-        inschrijvingen op de wachtlijst.
-      {:else}
-        These events are not fixed yet: whether an edition runs depends on how many people join
-        the waiting list.
-      {/if}
+      {slot(
+        'note',
+        'body',
+        nl
+          ? 'Deze events staan nog niet vast: of een editie doorgaat, hangt af van het aantal inschrijvingen op de wachtlijst.'
+          : 'These events are not fixed yet: whether an edition runs depends on how many people join the waiting list.'
+      )}
     </p>
 
     <!-- Box office. The link is the page; boxoffice.js mounts the Ticket Tailor
@@ -132,13 +144,13 @@
          no consent or no account configured this still reaches the tickets. -->
     <div class="box-office" data-box-office>
       <p class="body">
-        {#if nl}
-          Tickets en inschrijvingen lopen via ons box office. Daar staan alle edities met hun
-          actuele status.
-        {:else}
-          Tickets and registration run through our box office, with every edition and its current
-          status.
-        {/if}
+        {slot(
+          'box-office',
+          'body',
+          nl
+            ? 'Tickets en inschrijvingen lopen via ons box office. Daar staan alle edities met hun actuele status.'
+            : 'Tickets and registration run through our box office, with every edition and its current status.'
+        )}
       </p>
       <a
         class="pill pill--primary"
@@ -158,21 +170,23 @@
   <div class="wrap">
     <div class="sec-head" data-reveal>
       <div>
-        <span class="running">{nl ? 'Onze formats' : 'Our formats'}</span>
+        <span class="running">{slot('formats', 'running', nl ? 'Onze formats' : 'Our formats')}</span>
         <h2 class="d-l align-right">
-          {nl
-            ? 'Het medium verandert. De fundamenten blijven.'
-            : 'The medium changes. The foundations stay.'}
+          {slot(
+            'formats',
+            'heading',
+            nl ? 'Het medium verandert. De fundamenten blijven.' : 'The medium changes. The foundations stay.'
+          )}
         </h2>
       </div>
       <p class="body">
-        {#if nl}
-          Elk format vertrekt van dezelfde zes fundamenten. Wat verandert, is de duur, de
-          intensiteit en de leeftijdsgroep.
-        {:else}
-          Every format starts from the same six foundations. What changes is duration, intensity
-          and age group.
-        {/if}
+        {slot(
+          'formats',
+          'lead',
+          nl
+            ? 'Elk format vertrekt van dezelfde zes fundamenten. Wat verandert, is de duur, de intensiteit en de leeftijdsgroep.'
+            : 'Every format starts from the same six foundations.'
+        )}
       </p>
     </div>
 
@@ -217,17 +231,17 @@
   <div class="wrap">
     <div class="sec-head" data-reveal>
       <div>
-        <span class="running">{nl ? 'Alle events' : 'All events'}</span>
-        <h2 class="d-l">{nl ? 'Volledig overzicht' : 'Full overview'}</h2>
+        <span class="running">{slot('alle', 'running', nl ? 'Alle events' : 'All events')}</span>
+        <h2 class="d-l">{slot('alle', 'heading', nl ? 'Volledig overzicht' : 'Full overview')}</h2>
       </div>
       <p class="body">
-        {#if nl}
-          Afgelopen edities blijven niet tussen de actieve events staan: ze verhuizen naar Journal
-          als recap, met foto's, aftermovie en verhalen.
-        {:else}
-          Past editions do not stay among the active ones: they move to the Journal as a recap,
-          with photos, aftermovie and stories.
-        {/if}
+        {slot(
+          'alle',
+          'lead',
+          nl
+            ? 'Afgelopen edities verhuizen naar Journal als recap, met foto\'s, aftermovie en verhalen.'
+            : 'Past editions move to the Journal as a recap, with photos, aftermovie and stories.'
+        )}
       </p>
     </div>
 
@@ -283,3 +297,7 @@
     <a class="pill pill--ghost" href="#alle">Hosted Experiences</a>
   </div>
 </section>
+
+<!-- Sections added in the backoffice that are not one of the fixed slots.
+     Rendering them means nothing anyone adds is silently ignored. -->
+<PageSections sections={extraSections(cfg, SLOTS)} {nl} />

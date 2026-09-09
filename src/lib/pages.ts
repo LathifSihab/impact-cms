@@ -1,0 +1,71 @@
+/**
+ * Page shapes and the helpers that read them — client-safe.
+ *
+ * These live outside `server/` because components need them. Anything under
+ * `$lib/server` is refused by the bundler if it reaches the browser, which is
+ * the right rule: that module talks to the database with the caller's
+ * credentials. These are the parts with no such dependency — plain types and
+ * two lookups over an array.
+ */
+
+import type { Ground, SectionType } from './sections';
+
+export interface PageSection {
+  id: string;
+  position: number;
+  type: SectionType;
+  ground: Ground;
+  anchor: string | null;
+  content: Record<string, unknown>;
+}
+
+export interface PageRecord {
+  id: string;
+  locale: 'nl' | 'en';
+  navLabel: string;
+  sortOrder: number;
+  heroLabel: string;
+  heroTitle: string;
+  heroIntro: string;
+  heroImage: string | null;
+  heroVariant: string;
+  seo: { title: string; description: string };
+  published: boolean;
+  updatedAt: string;
+  sections: PageSection[];
+}
+
+export interface PageInput {
+  navLabel: string;
+  sortOrder: number;
+  heroLabel: string;
+  heroTitle: string;
+  heroIntro: string;
+  heroImage: string | null;
+  heroVariant: string;
+  seo: { title: string; description: string };
+  published: boolean;
+  locale: 'nl' | 'en';
+}
+
+/**
+ * A named slot on a page whose layout is fixed.
+ *
+ * /events and /journal are not free compositions — the list of editions has to
+ * sit between the intro and the format strip — so their editable copy is
+ * addressed by anchor rather than by position. Reordering sections in the
+ * backoffice then cannot move the intro into the middle of the table.
+ */
+export function sectionAt(page: PageRecord | null, anchor: string): PageSection | null {
+  return page?.sections.find((s) => s.anchor === anchor) ?? null;
+}
+
+/**
+ * Sections that are not one of the fixed slots.
+ *
+ * Rendered after the fixed layout, so a section someone adds to /events in the
+ * backoffice appears somewhere rather than being silently dropped.
+ */
+export function extraSections(page: PageRecord | null, slots: string[]): PageSection[] {
+  return (page?.sections ?? []).filter((s) => !s.anchor || !slots.includes(s.anchor));
+}

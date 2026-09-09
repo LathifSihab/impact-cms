@@ -9,7 +9,7 @@
    */
   import { imageUrl } from '$lib/i18n';
   import { renderMarkdown } from '$lib/markdown';
-  import type { PageSection } from '$lib/server/pages';
+  import type { PageSection } from '$lib/pages';
   import type { CollectionItem } from '$lib/server/page-content';
 
   let {

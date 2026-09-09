@@ -1,7 +1,7 @@
 <script lang="ts">
   /** The hero every configured page shares, in the site's own markup. */
   import { imageUrl } from '$lib/i18n';
-  import type { PageRecord } from '$lib/server/pages';
+  import type { PageRecord } from '$lib/pages';
 
   let { page }: { page: PageRecord } = $props();
 

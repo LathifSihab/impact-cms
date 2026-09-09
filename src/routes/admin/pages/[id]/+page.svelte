@@ -2,7 +2,6 @@
   import { enhance } from '$app/forms';
   import ImageInput from '$lib/components/ImageInput.svelte';
   import SectionsEditor from '$lib/components/SectionsEditor.svelte';
-  import { LOCALES } from '$lib/collections';
   import type { ActionData, PageData } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -19,6 +18,11 @@
   ];
 
   const publicHref = $derived(p.id === 'home' ? '/' : `/${p.id}`);
+
+  const LANG_TABS = [
+    { code: 'nl', label: 'Nederlands' },
+    { code: 'en', label: 'Engels' }
+  ] as const;
 </script>
 
 <svelte:head><title>{p.navLabel} — IMPACT backoffice</title></svelte:head>
@@ -33,7 +37,29 @@
       </a>
     </div>
     <p class="meta" style="margin-top:10px"><span class="mono">{publicHref}</span></p>
+
+    <div class="lang-tabs">
+      {#each LANG_TABS as l (l.code)}
+        <a
+          class="lang-tab"
+          class:is-on={data.locale === l.code}
+          href="/admin/pages/{p.id}?locale={l.code}"
+          data-sveltekit-reload
+        >
+          {l.label}
+          {#if !data.locales.includes(l.code)}<span class="tag tag--dim">nog niet</span>{/if}
+        </a>
+      {/each}
+    </div>
   </header>
+
+  {#if !data.exists}
+    <div class="notice">
+      Deze pagina bestaat nog niet in het <strong>{data.locale === 'en' ? 'Engels' : 'Nederlands'}</strong>.
+      De velden hieronder zijn overgenomen uit de Nederlandse versie — vertaal ze en bewaar om
+      deze taal aan te maken.
+    </div>
+  {/if}
 
   {#if form?.saved}<div class="notice notice--ok">Bewaard.</div>{/if}
   {#if form?.problem}
@@ -129,12 +155,11 @@
           </div>
           <div>
             <div class="field">
-              <label for="locale">Taal</label>
-              <select id="locale" name="locale">
-                {#each LOCALES as l (l.value)}
-                  <option value={l.value} selected={l.value === p.locale}>{l.label}</option>
-                {/each}
-              </select>
+              <span class="lab">Taal</span>
+              <!-- Chosen by the tabs above; a select here could silently move a
+                   page's content from one language row to the other. -->
+              <input type="hidden" name="locale" value={data.locale} />
+              <p class="body" style="margin:0">{data.locale === 'en' ? 'Engels' : 'Nederlands'}</p>
             </div>
           </div>
           <div class="full">
@@ -168,3 +193,32 @@
     </div>
   </form>
 </div>
+
+<style>
+  .lang-tabs {
+    display: flex;
+    gap: 4px;
+    margin-top: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .lang-tab {
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--grey-body);
+    border: 1px solid transparent;
+    border-bottom: 0;
+    margin-bottom: -1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .lang-tab:hover {
+    color: var(--ink);
+  }
+  .lang-tab.is-on {
+    background: var(--white);
+    border-color: var(--border);
+    color: var(--ink);
+  }
+</style>

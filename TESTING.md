@@ -494,8 +494,14 @@ Expect 9, 7, 8, 6, 4, 4, 2 and 1 sections, with two blocks reported as not
 recognised. Those are bespoke markup with no section type; they are listed
 rather than mangled.
 
-- [ ] `/admin/pages` lists all eight with their slug, hero title, section count
-      and Live/Concept badge.
+- [ ] `/admin/pages` lists ten: the eight prose pages plus **Events
+      (lijstpagina)** and **Journal (lijstpagina)**, with slug, hero title,
+      section count and Live/Concept badge.
+- [ ] Open **Events (lijstpagina)**. Language tabs at the top; both Nederlands
+      and Engels exist. Change the hero title on the Dutch tab, save, and
+      `/events` shows it while `/en/events` is untouched.
+- [ ] Open **Over IMPACT** and switch to **Engels** — marked "nog niet",
+      pre-filled from the Dutch row, with a notice saying saving will create it.
 - [ ] Open **Over IMPACT.** The sections are collapsed accordions showing type,
       heading and background — the page's outline at a glance.
 - [ ] Expand one. It has the fields for its type, plus Background and Anchor.

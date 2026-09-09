@@ -12,6 +12,8 @@
    */
   import { formatDate, imageUrl, path, translator } from '$lib/i18n';
   import { JOURNAL_CATEGORIES } from '$lib/collections';
+  import PageSections from '$lib/components/site/PageSections.svelte';
+  import { extraSections } from '$lib/pages';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -20,6 +22,7 @@
   const p = $derived((rest: string) => path(data.locale, rest));
   const nl = $derived(data.locale === 'nl');
 
+  const cfg = $derived(data.page);
   const feature = $derived(data.posts[0] ?? null);
   const rest = $derived(data.posts.slice(1));
 
@@ -39,17 +42,13 @@
 <header class="hero hero--page" data-reveal-root>
   <div class="hero-content wrap">
     <div>
-      <span class="label reveal">[ Journal ]</span>
-      <h1 class="d-xl reveal">What we lived, learned and built.</h1>
+      <span class="label reveal">{cfg?.heroLabel || '[ Journal ]'}</span>
+      <h1 class="d-xl reveal">{cfg?.heroTitle || 'What we lived, learned and built.'}</h1>
       <p class="intro reveal">
-        {#if nl}
-          Journal is ons levende archief. Geen klassieke blog, maar alles wat er binnen IMPACT
-          gebeurt of gebeurd is: recaps, verhalen, interviews, expert content, partnerverhalen en
-          nieuws.
-        {:else}
-          The Journal is our living archive. Not a blog, but everything happening inside IMPACT:
-          recaps, stories, interviews, expert content, partner stories and news.
-        {/if}
+        {cfg?.heroIntro ||
+          (nl
+            ? 'Journal is ons levende archief: recaps, verhalen, interviews, expert content, partnerverhalen en nieuws.'
+            : 'The Journal is our living archive: recaps, stories, interviews, expert content, partner stories and news.')}
       </p>
     </div>
   </div>
@@ -102,6 +101,8 @@
     {/if}
   </div>
 </section>
+
+<PageSections sections={extraSections(cfg, [])} {nl} />
 
 <section class="news-band">
   <div class="wrap">

@@ -20,7 +20,7 @@
     sectionSummary,
     type SectionType
   } from '$lib/sections';
-  import type { PageSection } from '$lib/server/pages';
+  import type { PageSection } from '$lib/pages';
   import ImageInput from './ImageInput.svelte';
   import TagsEditor from './TagsEditor.svelte';
   import RowsEditor from './RowsEditor.svelte';

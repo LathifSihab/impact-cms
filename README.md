@@ -263,8 +263,21 @@ magic number, not by the `Content-Type` the client claims.
 ## Page configuration
 
 `/admin/pages` configures the eight prose pages — Home, Over, Samenwerken,
-Social Impact, Hosted Experiences, Media, Contact, Privacy. Events and Journal
-are not here: they are lists, driven by their own content types.
+Social Impact, Hosted Experiences, Media, Contact, Privacy — plus the copy on
+the two list pages, Events and Journal.
+
+The rule is: **records live in Inhoud, page copy lives in Pagina's.** Each
+edition is still edited under Inhoud → Events; what Page Configuration owns on
+those two pages is the hero and the section headings around the list, addressed
+by *anchor* rather than by position, so reordering cannot move the intro into
+the middle of the table. A section added there that is not one of the fixed
+slots renders after the fixed layout rather than being silently dropped.
+
+A page exists once per language: `pages` is keyed on `(id, locale)`, and the
+editor has language tabs. Opening a language that does not exist yet pre-fills
+from the Dutch row so the editor is translating rather than starting from
+nothing; saving creates it. The public page falls back to Dutch when there is no
+English row, the same as events and journal.
 
 A page is a row plus an ordered list of sections:
 
