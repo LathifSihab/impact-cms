@@ -194,6 +194,55 @@
       </div>
     </section>
 
+  {:else if s.type === 'downloads'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+        {#if str(c, 'heading')}
+          <h2 class="d-l" style="margin:22px 0 34px">{str(c, 'heading')}</h2>
+        {/if}
+        <div class="dl-list">
+          {#each list(c, 'items') as item, i (item.title)}
+            {@const n = String(i + 1).padStart(2, '0')}
+            {#if item.href}
+              <a class="dl-row" href={item.href} target="_blank" rel="noopener">
+                <span class="n">{n}</span><span class="t">{item.title}</span>
+                <span class="m">{item.meta || 'PDF'}</span>
+              </a>
+            {:else}
+              <!-- No link yet: the site shows these greyed rather than hiding
+                   them, so the list reads as a plan rather than a gap. -->
+              <div class="dl-row is-pending">
+                <span class="n">{n}</span><span class="t">{item.title}</span>
+                <span class="m">{item.meta || (nl ? 'Volgt' : 'Coming')}</span>
+              </div>
+            {/if}
+          {/each}
+        </div>
+      </div>
+    </section>
+
+  {:else if s.type === 'split_list'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+        <div class="split-list" style="margin-top:34px">
+          <div>
+            <h3 class="h">{str(c, 'leftTitle')}</h3>
+            <ul class="ticks">
+              {#each tags(c, 'leftItems') as item (item)}<li>{item}</li>{/each}
+            </ul>
+          </div>
+          <div>
+            <h3 class="h">{str(c, 'rightTitle')}</h3>
+            <ul class="ticks">
+              {#each tags(c, 'rightItems') as item (item)}<li>{item}</li>{/each}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
   {:else if s.type === 'news_band'}
     <section class="news-band" id={s.anchor || undefined}>
       <div class="wrap">

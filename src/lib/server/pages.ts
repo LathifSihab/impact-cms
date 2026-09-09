@@ -25,6 +25,7 @@ const toPage = (p: Row, sections: Row[] = []): PageRecord => ({
   heroVariant: p.hero_variant ?? 'page',
   seo: p.seo ?? { title: '', description: '' },
   published: p.published !== false,
+  isTemplate: p.is_template === true,
   updatedAt: String(p.updated_at ?? ''),
   sections: sections
     .slice()
@@ -130,7 +131,8 @@ export async function savePage(
       hero_image: input.heroImage,
       hero_variant: input.heroVariant,
       seo: input.seo,
-      published: input.published
+      published: input.published,
+      is_template: input.isTemplate
     },
     { onConflict: 'id,locale' }
   );

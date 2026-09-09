@@ -17,7 +17,9 @@
     { value: 'event', label: 'Event-stijl' }
   ];
 
-  const publicHref = $derived(p.id === 'home' ? '/' : `/${p.id}`);
+  const publicHref = $derived(
+    p.isTemplate ? '/events' : p.id === 'home' ? '/' : `/${p.id}`
+  );
 
   const LANG_TABS = [
     { code: 'nl', label: 'Nederlands' },
@@ -168,6 +170,11 @@
               <label for="published">Zichtbaar op de site</label>
             </div>
             <span class="hint">Uitgevinkt blijft de pagina bewerkbaar maar toont ze niet.</span>
+          </div>
+          <div class="full">
+            <!-- Carried through rather than shown as a choice: whether a record
+                 is shared copy or a page is a structural fact, not a setting. -->
+            {#if p.isTemplate}<input type="hidden" name="is_template" value="1" />{/if}
           </div>
         </div>
       </fieldset>

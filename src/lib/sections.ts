@@ -20,7 +20,9 @@ export type SectionType =
   | 'collection'
   | 'cta_cards'
   | 'band'
-  | 'news_band';
+  | 'news_band'
+  | 'downloads'
+  | 'split_list';
 
 export type Ground = 'white' | 'sand' | 'black';
 
@@ -182,6 +184,43 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  downloads: {
+    type: 'downloads',
+    label: 'Downloadlijst',
+    blurb: 'Genummerde rij bestanden om te downloaden. Laat de link leeg voor "Volgt".',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      {
+        name: 'items',
+        label: 'Bestanden',
+        kind: 'rows',
+        addLabel: 'Bestand toevoegen',
+        columns: [
+          { name: 'title', label: 'Naam' },
+          { name: 'meta', label: 'Type', kind: 'text' },
+          { name: 'href', label: 'Link' }
+        ],
+        help: 'Een rij zonder link toont als "nog niet beschikbaar".'
+      }
+    ]
+  },
+
+  split_list: {
+    type: 'split_list',
+    label: 'Twee lijsten naast elkaar',
+    blurb: 'Twee kolommen met een titel en een opsomming, om partijen of opties te vergelijken.',
+    summary: 'running',
+    fields: [
+      running,
+      { name: 'leftTitle', label: 'Titel links', kind: 'text' },
+      { name: 'leftItems', label: 'Punten links', kind: 'tags' },
+      { name: 'rightTitle', label: 'Titel rechts', kind: 'text' },
+      { name: 'rightItems', label: 'Punten rechts', kind: 'tags' }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -198,7 +237,9 @@ export const SECTION_ORDER: SectionType[] = [
   'collection',
   'cta_cards',
   'band',
-  'news_band'
+  'news_band',
+  'downloads',
+  'split_list'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {

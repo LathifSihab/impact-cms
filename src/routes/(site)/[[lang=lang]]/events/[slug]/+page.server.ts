@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
 import { getEvent } from '$lib/server/site';
+import { getPublishedPage } from '$lib/server/pages';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
@@ -8,8 +9,14 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
   const event = await getEvent(locals.supabase, params.slug);
   if (!event) error(404, 'Deze editie bestaat niet.');
 
+  /* Every edition shares its chrome — the section labels, the waitlist card's
+     copy, the contact band. That lives on one template page rather than being
+     repeated on each event, so changing "Praktisch" is one edit, not four. */
+  const chrome = await getPublishedPage(locals.supabase, 'event-detail', locale);
+
   return {
     event,
+    chrome,
     locale,
     /**
      * The waitlist form posts to the live Netlify function, which lives in the

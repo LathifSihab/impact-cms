@@ -12,6 +12,7 @@
    * details.faq, gallery, band, news-band.
    */
   import { imageUrl, path, translator } from '$lib/i18n';
+  import { sectionAt } from '$lib/pages';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -23,6 +24,15 @@
   const ext = $derived((f: string) => {
     const base = (data.staticBase ?? '').replace(/\/$/, '');
     return base ? `${base}${nl ? '' : '/en'}/${f}` : `/${f}`;
+  });
+
+  /* Chrome from the event-detail template, by anchor, each falling back to the
+     string that used to be hardcoded so an unconfigured install still reads
+     correctly. */
+  const chrome = $derived(data.chrome);
+  const slot = $derived((anchor: string, key: string, fallback: string) => {
+    const v = sectionAt(chrome, anchor)?.content?.[key];
+    return typeof v === 'string' && v.trim() ? v.trim() : fallback;
   });
 
   const statusLabel = $derived(t(`status.${e.status}` as 'status.waitlist'));
@@ -87,14 +97,14 @@
 <div class="wrap event-body">
   <div>
     <section>
-      <span class="running">{nl ? 'Wat is het' : 'What it is'}</span>
+      <span class="running">{slot('intro', 'running', nl ? 'Wat is het' : 'What it is')}</span>
       <h2 style="margin-top:22px">{e.standfirst}</h2>
       <p class="intro">{e.intro}</p>
     </section>
 
     {#if e.programmeDays.length}
       <section>
-        <span class="running">{t('event.programme')}</span>
+        <span class="running">{slot('programme', 'running', t('event.programme'))}</span>
         <div style="margin-top:26px">
           {#each e.programmeDays as d (d.day + d.title)}
             <div class="day-row">
@@ -111,7 +121,9 @@
 
     {#if e.foundations.length}
       <section>
-        <span class="running">{nl ? 'Welke fundamenten' : 'Which foundations'}</span>
+        <span class="running">
+          {slot('foundations', 'running', nl ? 'Welke fundamenten' : 'Which foundations')}
+        </span>
         <div class="fund-grid" style="margin-top:26px">
           {#each e.foundations as f (f.id)}
             <div class="fund-cell">
@@ -129,11 +141,15 @@
            filters on `confirmed`, so an unapproved name cannot render even if
            this template forgot to check. -->
       <section id="experts">
-        <span class="running">{t('event.experts')}</span>
+        <span class="running">{slot('experts', 'running', t('event.experts'))}</span>
         <p class="body" style="max-width:620px;margin:16px 0 26px">
-          {nl
-            ? 'Deze editie wordt begeleid door ons kernteam van experts, elk verbonden aan één of meerdere fundamenten.'
-            : 'This edition is guided by our core team of experts, each tied to one or more foundations.'}
+          {slot(
+            'experts',
+            'lead',
+            nl
+              ? 'Deze editie wordt begeleid door ons kernteam van experts, elk verbonden aan één of meerdere fundamenten.'
+              : 'This edition is guided by our core team of experts, each tied to one or more foundations.'
+          )}
         </p>
         <div class="expert-grid">
           {#each e.experts as x (x.id)}
@@ -149,7 +165,7 @@
 
     {#if e.faq.length}
       <section>
-        <span class="running">{t('event.faq')}</span>
+        <span class="running">{slot('faq', 'running', t('event.faq'))}</span>
         <div style="margin-top:26px">
           {#each e.faq as f (f.q)}
             <details class="faq">
@@ -165,11 +181,15 @@
   <aside class="sticky-col" id="wachtlijst">
     <div class="wl-card">
       {#if e.status === 'waitlist'}
-        <span class="running">{nl ? 'Wachtlijst' : 'Waiting list'}</span>
+        <span class="running">{slot('waitlist', 'running', nl ? 'Wachtlijst' : 'Waiting list')}</span>
         <h2 style="margin-top:16px">
-          {nl ? 'Deze editie is nog niet bevestigd' : 'This edition is not confirmed yet'}
+          {slot(
+            'waitlist',
+            'heading',
+            nl ? 'Deze editie is nog niet bevestigd' : 'This edition is not confirmed yet'
+          )}
         </h2>
-        <p class="body">{t('wl.body')}</p>
+        <p class="body">{slot('waitlist', 'body', t('wl.body'))}</p>
 
         {#if data.subscribeEndpoint}
           <!-- Posts to the live Netlify function. 04-INTEGRATIONS.md is explicit
@@ -249,7 +269,7 @@
     </div>
 
     <div class="practical">
-      <span class="running">{t('event.practical')}</span>
+      <span class="running">{slot('practical', 'running', t('event.practical'))}</span>
       <div style="margin-top:18px">
         {#each practical as row (row.k)}
           <div class="row"><span>{row.k}</span><span>{row.v}</span></div>
@@ -295,24 +315,30 @@
 <section class="band" id="contact">
   <div class="wrap">
     <div>
-      <span class="running">{nl ? 'Contact' : 'Contact'}</span>
+      <span class="running">{slot('contact', 'running', 'Contact')}</span>
       <h2 class="d-l d-l--44">
-        {nl ? 'Nog vragen over deze editie?' : 'Questions about this edition?'}
+        {slot('contact', 'heading', nl ? 'Nog vragen over deze editie?' : 'Questions about this edition?')}
       </h2>
     </div>
-    <a class="pill pill--ghost" href={ext('contact.html')}>{nl ? 'Neem contact op' : 'Get in touch'}</a>
+    <a class="pill pill--ghost" href={slot('contact', 'ctaHref', ext('contact.html'))}>
+      {slot('contact', 'ctaLabel', nl ? 'Neem contact op' : 'Get in touch')}
+    </a>
   </div>
 </section>
 
 <section class="news-band">
   <div class="wrap">
     <h2 class="d-l d-l--40" style="margin:16px 0 12px">
-      {nl ? 'Blijf op de hoogte' : 'Join the IMPACT community'}
+      {slot('news', 'heading', nl ? 'Blijf op de hoogte' : 'Join the IMPACT community')}
     </h2>
     <p class="body">
-      {nl
-        ? 'Nieuwe events, verhalen en partnerships. Eén mail per maand.'
-        : 'New events, stories and partnerships. One mail a month.'}
+      {slot(
+        'news',
+        'body',
+        nl
+          ? 'Nieuwe events, verhalen en partnerships. Eén mail per maand.'
+          : 'New events, stories and partnerships. One mail a month.'
+      )}
     </p>
     <form class="news-form" data-newsletter novalidate name="newsletter" action="/">
       <input type="hidden" name="form-name" value="newsletter" />

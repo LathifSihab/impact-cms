@@ -81,6 +81,7 @@ export const actions: Actions = {
           heroVariant: str('hero_variant') || 'page',
           seo: { title: str('seo_title'), description: str('seo_description') },
           published: form.get('published') != null,
+          isTemplate: form.get('is_template') != null,
           locale
         },
         parsed.sections

@@ -12,8 +12,9 @@ import type { PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ params, locals, parent }) => {
   const { locale } = await parent();
 
-  const page = await getPublishedPage(locals.supabase, params.slug);
-  if (!page) error(404, 'Deze pagina bestaat niet.');
+  const page = await getPublishedPage(locals.supabase, params.slug, locale);
+  // A template holds shared copy for another route and has no URL of its own.
+  if (!page || page.isTemplate) error(404, 'Deze pagina bestaat niet.');
 
   return { page, locale, collections: await resolveCollections(locals.supabase, page.sections) };
 };

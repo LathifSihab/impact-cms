@@ -31,6 +31,8 @@ export interface PageRecord {
   heroVariant: string;
   seo: { title: string; description: string };
   published: boolean;
+  /** Shared copy read by another route, not served at its own URL. */
+  isTemplate: boolean;
   updatedAt: string;
   sections: PageSection[];
 }
@@ -45,6 +47,7 @@ export interface PageInput {
   heroVariant: string;
   seo: { title: string; description: string };
   published: boolean;
+  isTemplate: boolean;
   locale: 'nl' | 'en';
 }
 

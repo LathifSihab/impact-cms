@@ -330,22 +330,32 @@ reach the renderer.
 `published` is a draft flag, not a consent gate: unpublished pages stay editable
 and return 404 to visitors, enforced by RLS rather than by the route.
 
+### Templates
+
+`event-detail` is a page whose content is read by another route rather than
+served at its own URL: every `/events/<slug>` takes its section labels, its
+waitlist card copy and its contact band from it, so changing "Praktisch" is one
+edit rather than one per edition. `is_template` marks it, `/[slug]` refuses to
+serve it, and the backoffice lists it as *(sjabloon)*.
+
 ### Seeding
 
-`npm run seed:pages` lifts the pages out of `site/*.html` — hero, section
-headings, leads, two-column blocks, CTA cards, bands — so the screens open with
-the client's own words instead of eight empty forms or invented copy. It reports
-what it could not place rather than mangling it:
+`npm run seed:pages` lifts the pages out of `site/*.html` **and `site/en/*.html`**
+— hero, section headings, leads, two-column blocks, CTA cards, bands, download
+lists and split lists. Both languages come from the site's own generated
+English, so nobody retypes 900 strings that are already correct. The screens
+open with the client's words rather than empty forms or invented copy:
 
 ```
-home                  9 secties
-over                  7 secties
-hosted-experiences    4 secties   (1 niet herkend)
+home (nl)             12 secties
+home (en)             12 secties
+over (nl)              7 secties
+event-detail (nl)      9 tekstblokken
 ```
 
-The bespoke bits — the homepage cinema reel, the founders block, the contact
-form — have no section type and are still the static site's markup. Add them as
-sections in the editor, or leave them.
+Nothing is reported as unrecognised any more: `downloads` covers the /media file
+list and `split_list` covers the two-column comparison on /hosted-experiences,
+which were the last two blocks a person could not edit.
 
 ## Not done
 
