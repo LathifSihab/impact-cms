@@ -41,7 +41,47 @@ for (const [key, value] of Object.entries({ ...privateEnv, ...env })) {
  */
 const ADMIN_PREFIX = '/admin';
 
+/**
+ * The two values without which nothing can run.
+ *
+ * createServerClient throws on empty strings, and it is called for every
+ * request — so a missing variable takes out every route, including /login,
+ * with Vercel's generic {"message":"Internal Error"} and nothing in the page
+ * to say why. Checking first turns an hour of guessing into a page that names
+ * the variable.
+ */
+function missingConfig(): string[] {
+  return [
+    ['PUBLIC_SUPABASE_URL', env.PUBLIC_SUPABASE_URL],
+    ['PUBLIC_SUPABASE_ANON_KEY', env.PUBLIC_SUPABASE_ANON_KEY]
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name as string);
+}
+
 export const handle: Handle = async ({ event, resolve }) => {
+  const missing = missingConfig();
+  if (missing.length) {
+    /* Names only, never values. A variable name is not a secret; the thing it
+       holds is. */
+    const lines = [
+      'Deze omgeving is niet geconfigureerd.',
+      '',
+      'Ontbrekende omgevingsvariabelen:',
+      ...missing.map((name) => '  ' + name),
+      '',
+      'Zet ze in de omgeving van de deploy en deploy opnieuw. Een waarde die je in',
+      'het dashboard van de host aanpast, bereikt de app pas bij de volgende deploy',
+      '- verversen van deze pagina verandert niets.',
+      '',
+      'Zie DEPLOYMENT.md, stap 9.'
+    ];
+    return new Response(lines.join(String.fromCharCode(10)) + String.fromCharCode(10), {
+      status: 500,
+      headers: { 'content-type': 'text/plain; charset=utf-8' }
+    });
+  }
+
   event.locals.supabase = createServerClient(
     env.PUBLIC_SUPABASE_URL ?? '',
     env.PUBLIC_SUPABASE_ANON_KEY ?? '',

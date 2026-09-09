@@ -19,3 +19,4 @@ build
 # written parental consent is not held. Drop them in locally; do not commit.
 static/assets/img/
 static/assets/video/
+.env*

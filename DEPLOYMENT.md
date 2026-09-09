@@ -408,6 +408,24 @@ Afterwards, and this is easy to forget:
 
 ## Troubleshooting
 
+**Every route returns `{"message":"Internal Error"}` — including `/login`.**
+The Supabase variables are not set in that environment. `hooks.server.ts` builds
+a Supabase client on every request, and it throws on empty values, so one
+missing variable takes out the whole site rather than one page.
+
+Open the URL directly rather than guessing: the app now answers with the names
+of the missing variables in plain text. If you still see Vercel's generic JSON,
+the deploy predates that check — set the variables and redeploy, and it will
+either work or tell you what is still missing.
+
+```bash
+vercel env ls                       # what is actually set, per environment
+vercel logs <deployment-url>        # the thrown error itself
+```
+
+The usual cause is that the variables were added *after* the last deploy. See
+the next entry.
+
 **A variable I changed in Vercel has no effect.**
 Environment variables reach the running app only at deploy time. Changing one in
 the dashboard and refreshing the page changes nothing — redeploy. `07-DECISIONS`
