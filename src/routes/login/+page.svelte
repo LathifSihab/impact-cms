@@ -1,4 +1,8 @@
 <script lang="ts">
+  /* The backoffice stylesheet is imported by admin/+layout.svelte, and this page
+     deliberately sits outside /admin so the auth guard lets it through — which
+     also means it does not inherit that import. It brings its own. */
+  import '../../app.css';
   import { enhance } from '$app/forms';
   import type { ActionData, PageData } from './$types';
 
