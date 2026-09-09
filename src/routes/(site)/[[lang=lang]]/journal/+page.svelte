@@ -40,6 +40,9 @@
 </svelte:head>
 
 <header class="hero hero--page" data-reveal-root>
+  {#if cfg?.heroImage}
+    <img src={imageUrl(cfg.heroImage)} alt={cfg.heroTitle} />
+  {/if}
   <div class="hero-content wrap">
     <div>
       <span class="label reveal">{cfg?.heroLabel || '[ Journal ]'}</span>

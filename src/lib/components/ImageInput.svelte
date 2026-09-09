@@ -33,6 +33,27 @@
   let localError = $state<string | null>(null);
   let input = $state<HTMLInputElement | null>(null);
 
+  /**
+   * Adopt what the server came back with.
+   *
+   * A save does not remount this component — `use:enhance` re-runs the load and
+   * the new path arrives as a changed prop. Without this the local preview and
+   * the "nog niet bewaard" line stayed on screen afterwards, so a save that had
+   * worked looked exactly like one that had not.
+   */
+  let seen = $state(untrack(() => value ?? ''));
+  $effect(() => {
+    const incoming = value ?? '';
+    if (incoming === seen) return;
+    seen = incoming;
+    stored = incoming;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
+    chosen = null;
+    cleared = false;
+    if (input) input.value = '';
+  });
+
   const shown = $derived(previewUrl ?? (cleared ? null : stored || null));
   /* Legacy values from the static site point at assets/... which this app does
      not serve. Saying so beats an unexplained broken image. */

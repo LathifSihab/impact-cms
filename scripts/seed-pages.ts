@@ -269,6 +269,30 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
   return { sections, skipped };
 }
 
+/**
+ * Never overwrite an uploaded hero.
+ *
+ * Re-running this is meant to be safe, and the pages carry images uploaded in
+ * the backoffice. Those live under /uploads and have no equivalent in the static
+ * HTML, so re-deriving the hero from the file would silently throw them away —
+ * which it did once before this existed. A legacy assets/... path has no such
+ * claim and is replaced.
+ */
+async function keepUploadedHero(
+  id: string,
+  locale: string,
+  candidate: string | null
+): Promise<string | null> {
+  const { data } = await db
+    .from('pages')
+    .select('hero_image')
+    .eq('id', id)
+    .eq('locale', locale)
+    .maybeSingle();
+  const current = (data as { hero_image?: string } | null)?.hero_image ?? '';
+  return current.startsWith('/uploads/') ? current : candidate;
+}
+
 /* --- run ------------------------------------------------------------------ */
 
 console.log(`\nPagina's uit ${SITE}\n`);
@@ -301,7 +325,7 @@ for (const [i, page] of PAGES.entries()) {
       hero_label: hero.label,
       hero_title: hero.title,
       hero_intro: hero.intro,
-      hero_image: hero.image,
+      hero_image: await keepUploadedHero(page.id, 'nl', hero.image),
       hero_variant: page.heroVariant,
       seo,
       published: true
@@ -537,7 +561,7 @@ for (const lp of LIST_PAGES) {
       hero_label: lp.hero.label,
       hero_title: lp.hero.title,
       hero_intro: lp.hero.intro,
-      hero_image: null,
+      hero_image: await keepUploadedHero(lp.id, lp.locale, null),
       hero_variant: 'page',
       seo: lp.seo,
       published: true
