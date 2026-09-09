@@ -22,7 +22,8 @@ export type SectionType =
   | 'band'
   | 'news_band'
   | 'downloads'
-  | 'split_list';
+  | 'split_list'
+  | 'numbered_list';
 
 export type Ground = 'white' | 'sand' | 'black';
 
@@ -141,6 +142,24 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         help: 'Bewerk de records zelf onder Inhoud; hier kies je alleen wat er getoond wordt.'
       },
       {
+        name: 'presentation',
+        label: 'Weergave',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Standaard voor dit type' },
+          { value: 'cards', label: 'Kaarten' },
+          { value: 'fund_long', label: 'Fundamenten uitgebreid' },
+          { value: 'age_cards', label: 'Leeftijdskaarten' },
+          { value: 'expert_grid', label: 'Expertraster' },
+          { value: 'format_rows', label: 'Formatrijen' },
+          { value: 'event_rows', label: 'Eventrijen' },
+          { value: 'journal_cards', label: 'Journalkaarten' },
+          { value: 'logos', label: 'Logowand' },
+          { value: 'stats', label: 'Cijfers' }
+        ],
+        help: 'Hoe de records eruitzien. Laat op standaard als je twijfelt.'
+      },
+      {
         name: 'limit',
         label: 'Maximum aantal',
         kind: 'text',
@@ -221,6 +240,39 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  numbered_list: {
+    type: 'numbered_list',
+    label: 'Genummerde lijst',
+    blurb:
+      'Genummerde blokken met titel en tekst — de routekaarten op de homepage, of de lagen op Over.',
+    summary: 'running',
+    fields: [
+      running,
+      heading,
+      {
+        name: 'style',
+        label: 'Stijl',
+        kind: 'select',
+        options: [
+          { value: 'routes', label: 'Routes (klikbaar)' },
+          { value: 'layers', label: 'Lagen (niet klikbaar)' }
+        ]
+      },
+      {
+        name: 'items',
+        label: 'Blokken',
+        kind: 'rows',
+        addLabel: 'Blok toevoegen',
+        columns: [
+          { name: 'title', label: 'Titel' },
+          { name: 'body', label: 'Tekst', kind: 'textarea' },
+          { name: 'ctaLabel', label: 'Linktekst' },
+          { name: 'ctaHref', label: 'Link' }
+        ]
+      }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -239,7 +291,8 @@ export const SECTION_ORDER: SectionType[] = [
   'band',
   'news_band',
   'downloads',
-  'split_list'
+  'split_list',
+  'numbered_list'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {

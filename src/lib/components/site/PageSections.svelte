@@ -30,6 +30,21 @@
     Array.isArray(c[k]) ? (c[k] as Record<string, string>[]) : [];
   const tags = (c: Record<string, unknown>, k: string) =>
     Array.isArray(c[k]) ? (c[k] as string[]) : [];
+
+  /* Each content type has a natural look on this site — partners are a logo
+     wall, events are rows, foundations a grid — so the editor only has to
+     choose when it wants something other than the obvious. */
+  const DEFAULTS: Record<string, string> = {
+    partners: 'logos',
+    figures: 'stats',
+    events: 'event_rows',
+    journal: 'journal_cards',
+    formats: 'format_rows',
+    age_groups: 'age_cards',
+    experts: 'expert_grid'
+  };
+  const how = (c: Record<string, unknown>) =>
+    str(c, 'presentation') || DEFAULTS[str(c, 'source')] || 'cards';
 </script>
 
 {#each sections as s (s.id || s.position)}
@@ -106,10 +121,8 @@
         {/if}
 
         {#if items.length === 0}
-          <p class="note body">
-            {nl ? 'Nog niets om te tonen.' : 'Nothing to show yet.'}
-          </p>
-        {:else if str(c, 'source') === 'partners'}
+          <p class="note body">{nl ? 'Nog niets om te tonen.' : 'Nothing to show yet.'}</p>
+        {:else if how(c) === 'logos'}
           <div class="logos" style="margin-top:26px">
             {#each items as it (it.id)}
               {#if it.image}
@@ -119,30 +132,7 @@
               {/if}
             {/each}
           </div>
-        {:else if str(c, 'source') === 'events'}
-          <!-- The site's own row for an edition, so a teaser on the homepage is
-               the same component as the list on /events. -->
-          {#each items as it (it.id)}
-            <a class="event-row" href={it.href}>
-              <div class="event-row-main">
-                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} />{/if}
-                <div><h3>{it.title}</h3></div>
-                <div class="when meta">{it.subtitle}</div>
-                <div class="cta"><span class="status">{nl ? 'Bekijk editie' : 'View edition'} →</span></div>
-              </div>
-            </a>
-          {/each}
-        {:else if str(c, 'source') === 'journal'}
-          <div class="cards-3" style="margin-top:26px">
-            {#each items as it (it.id)}
-              <a class="jcard" href={it.href}>
-                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
-                <h3>{it.title}</h3>
-                {#if it.subtitle}<p class="meta">{it.subtitle}</p>{/if}
-              </a>
-            {/each}
-          </div>
-        {:else if str(c, 'source') === 'figures'}
+        {:else if how(c) === 'stats'}
           <div class="stats" style="margin-top:26px">
             {#each items as it (it.id)}
               <div class="stat">
@@ -152,6 +142,76 @@
               </div>
             {/each}
           </div>
+        {:else if how(c) === 'event_rows'}
+          {#each items as it (it.id)}
+            <a class="event-row" href={it.href}>
+              <div class="event-row-main">
+                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} />{/if}
+                <div><h3>{it.title}</h3></div>
+                <div class="when meta">{it.subtitle}</div>
+                <div class="cta">
+                  <span class="status">{nl ? 'Bekijk editie' : 'View edition'}</span>
+                </div>
+              </div>
+            </a>
+          {/each}
+        {:else if how(c) === 'journal_cards'}
+          <div class="cards-4" style="margin-top:26px">
+            {#each items as it (it.id)}
+              <a class="jcard" href={it.href}>
+                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+                <h3>{it.title}</h3>
+                {#if it.subtitle}<p class="meta">{it.subtitle}</p>{/if}
+              </a>
+            {/each}
+          </div>
+        {:else if how(c) === 'format_rows'}
+          {#each items as it, i (it.id)}
+            <a class="format-row" href="#{it.id}">
+              <span class="n">{String(i + 1).padStart(2, '0')}</span>
+              <span class="name">IMPACT <span class="red">[{it.title}]</span></span>
+              <p class="body desc">{it.body ?? ''}</p>
+              <span class="m">{it.subtitle ?? ''}</span>
+            </a>
+          {/each}
+        {:else if how(c) === 'age_cards'}
+          <div class="cards-3" style="margin-top:26px">
+            {#each items as it (it.id)}
+              <div class="age">
+                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+                <div class="inner">
+                  <h3>{it.title}</h3>
+                  {#if it.subtitle}<span class="tag">{it.subtitle}</span>{/if}
+                  {#if it.body}<p class="body">{it.body}</p>{/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+        {:else if how(c) === 'expert_grid'}
+          <!-- Unconfirmed experts never arrive here: the anon policy filters
+               them before this component sees a row. -->
+          <div class="expert-grid" style="margin-top:26px">
+            {#each items as it (it.id)}
+              <article class="expert">
+                <h4>{it.title}</h4>
+                {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
+                {#if it.body}<p class="r">{it.body}</p>{/if}
+              </article>
+            {/each}
+          </div>
+        {:else if how(c) === 'fund_long'}
+          {#each items as it (it.id)}
+            <div class="fund-long">
+              {#if it.image}
+                <img class="fund-long-img" src={imageUrl(it.image)} alt={it.title} loading="lazy" />
+              {/if}
+              <div>
+                <span class="num">{it.number ?? ''}</span>
+                <h3 class="d-m">{it.title}</h3>
+                {#if it.body}<p class="intro">{it.body}</p>{/if}
+              </div>
+            </div>
+          {/each}
         {:else}
           <div class="fund-grid" style="margin-top:26px">
             {#each items as it (it.id)}
@@ -239,6 +299,40 @@
               {#each tags(c, 'rightItems') as item (item)}<li>{item}</li>{/each}
             </ul>
           </div>
+        </div>
+      </div>
+    </section>
+
+  {:else if s.type === 'numbered_list'}
+    {@const routes = str(c, 'style') !== 'layers'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        {#if str(c, 'running') || str(c, 'heading')}
+          <div class="sec-head" data-reveal>
+            <div>
+              {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+              {#if str(c, 'heading')}<h2 class="d-l">{str(c, 'heading')}</h2>{/if}
+            </div>
+          </div>
+        {/if}
+        <div class={routes ? 'routes' : 'layers'} style="margin-top:26px">
+          {#each list(c, 'items') as item, i (item.title)}
+            {@const n = String(i + 1).padStart(2, '0')}
+            {#if routes && item.ctaHref}
+              <a class="route" href={item.ctaHref}>
+                <span class="n">{n}</span>
+                <h3>{item.title}</h3>
+                {#if item.body}<p class="body">{item.body}</p>{/if}
+                {#if item.ctaLabel}<span class="tlink">{item.ctaLabel}</span>{/if}
+              </a>
+            {:else}
+              <div class={routes ? 'route' : 'layer'}>
+                <span class="n">{n}</span>
+                <h3>{item.title}</h3>
+                {#if item.body}<p class="body">{item.body}</p>{/if}
+              </div>
+            {/if}
+          {/each}
         </div>
       </div>
     </section>

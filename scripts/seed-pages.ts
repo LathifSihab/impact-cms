@@ -204,6 +204,65 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       continue;
     }
 
+    /* The numbered blocks appear twice on the site with different styling:
+       .routes on the homepage and .layers on Over. One section type, one
+       switch, rather than two types that would drift apart. */
+    if (inner.includes('class="routes"') || inner.includes('class="layers"')) {
+      const routes = inner.includes('class="routes"');
+      const cls = routes ? 'route' : 'layer';
+      const re2 = new RegExp(
+        `<(?:a|div)[^>]*class="${cls}"[^>]*>([\\s\\S]*?)<\\/(?:a|div)>`,
+        'g'
+      );
+      const items = [...inner.matchAll(re2)].map((row) => ({
+        title: first(row[1], /<h3[^>]*>([\s\S]*?)<\/h3>/),
+        body: first(row[1], /<p class="body">([\s\S]*?)<\/p>/),
+        ctaLabel: first(row[1], /<span class="tlink">([\s\S]*?)<\/span>/),
+        ctaHref: (row[0].match(/<a[^>]*href="([^"]+)"/) ?? [])[1] ?? ''
+      }));
+      if (items.length) {
+        sections.push({
+          type: 'numbered_list',
+          ground,
+          anchor,
+          content: {
+            running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
+            heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+            style: routes ? 'routes' : 'layers',
+            items
+          }
+        });
+        continue;
+      }
+    }
+
+    /* Blocks that are a content type shown a particular way. The records are
+       already managed under Inhoud, so the page stores which type and how, not
+       a copy of the words. */
+    const asCollection: [string, string, string][] = [
+      ['fund-long', 'foundations', 'fund_long'],
+      ['class="age"', 'age_groups', 'age_cards'],
+      ['expert-grid', 'experts', 'expert_grid'],
+      ['format-row', 'formats', 'format_rows']
+    ];
+    const match = asCollection.find(([needle]) => inner.includes(needle));
+    if (match) {
+      sections.push({
+        type: 'collection',
+        ground,
+        anchor,
+        content: {
+          running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          source: match[1],
+          presentation: match[2],
+          limit: ''
+        }
+      });
+      continue;
+    }
+
     if (inner.includes('dl-list')) {
       /* A row is an <a> when there is a file behind it and a <div> when there
          is not, so the closing tag is matched as either rather than with a

@@ -320,6 +320,13 @@ the page and two copies of one sentence drift apart. Delete the slot and the
 sections go; the hardcoded fallback only applies to a page that has never been
 configured.
 
+**A `collection` section has a presentation.** The same records look different
+in different places — foundations are a grid on the homepage and full-width
+blocks with images on Over; formats are a black strip on /events and cards
+elsewhere. One section type carries a `presentation` field for that, defaulting
+to whatever is natural for the source, so the page decides the look and the
+records stay in one place.
+
 **A `collection` section points at existing content** rather than repeating it.
 Foundations, formats, age groups, tiers, partners, figures and experts already
 have their own screens; a generic block builder would invite someone to retype
