@@ -305,6 +305,15 @@ stylesheet already has — `.sec-head`, `.two-col--media`, `.cta-cards`, `.band`
 than as a page builder's idea of one. `src/lib/sections.ts` describes them once
 and both the editor and the renderer read that description.
 
+**The per-format sections on /events are a `collection` slot.** `#days`,
+`#camps`, `#retreats` and `#community` are the format records rendered as detail
+blocks. The page decides whether they appear, on what ground, how many, and
+whether a heading sits above them; the words and images stay in Inhoud →
+Formats, because those same records also feed the black format strip higher up
+the page and two copies of one sentence drift apart. Delete the slot and the
+sections go; the hardcoded fallback only applies to a page that has never been
+configured.
+
 **A `collection` section points at existing content** rather than repeating it.
 Foundations, formats, age groups, tiers, partners, figures and experts already
 have their own screens; a generic block builder would invite someone to retype

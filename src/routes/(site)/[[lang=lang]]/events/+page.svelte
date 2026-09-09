@@ -36,7 +36,24 @@
     const v = sectionAt(cfg, anchor)?.content?.[key];
     return typeof v === 'string' && v.trim() ? v.trim() : fallback;
   });
-  const SLOTS = ['upcoming', 'formats', 'alle', 'note', 'box-office'];
+  const SLOTS = ['upcoming', 'formats', 'alle', 'note', 'box-office', 'format-details'];
+
+  /* The per-format detail sections are a `collection` slot on the events page.
+     The words and images stay in Inhoud → Formats — they also feed the black
+     strip above, and two copies of the same sentence drift apart — while the
+     page decides whether the sections appear, on what ground, and how many.
+
+     A configured page with no such slot means "do not show them". The fallback
+     only applies when the page itself has not been configured, so an unseeded
+     install still renders the site as it was. */
+  const detailSlot = $derived(sectionAt(cfg, 'format-details'));
+  const detailLimit = $derived.by(() => {
+    const raw = String(detailSlot?.content?.limit ?? '').trim();
+    const n = raw ? Number(raw) : NaN;
+    return Number.isFinite(n) && n > 0 ? n : Infinity;
+  });
+  const showDetails = $derived(cfg ? !!detailSlot : true);
+  const detailBase = $derived(detailSlot?.ground ?? 'white');
 
   const upcoming = $derived(data.events.filter((e) => e.status !== 'past'));
   /** Sections exist only for formats with body copy; Hosted links out instead. */
@@ -204,30 +221,55 @@
   </div>
 </section>
 
-<!-- one section per format, alternating ground and image side, as on the site -->
-{#each detailed as f, i (f.id)}
-  <section class="section" class:section--sand={i % 2 === 1} id={f.id}>
-    <div class="wrap two-col two-col--media">
-      {#if i % 2 === 1 && f.image}
-        <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
-      {/if}
-      <div>
-        <span class="running">Format {String(i + 1).padStart(2, '0')}</span>
-        <h2 class="d-l" style="margin:22px 0 24px">IMPACT <span class="red">{f.bracketName}</span></h2>
-        <p class="intro">{f.description}</p>
-        {#if f.ticks.length}
-          <ul class="ticks">
-            {#each f.ticks as tick (tick)}<li>{tick}</li>{/each}
-          </ul>
-        {/if}
-        {#if f.body}<p class="body" style="margin-top:24px">{f.body}</p>{/if}
+<!-- One section per format, alternating ground and image side, as on the site.
+     Placement and ground come from the `format-details` slot; the content comes
+     from the format records. -->
+{#if showDetails}
+  {#if detailSlot && (String(detailSlot.content?.running ?? '') || String(detailSlot.content?.heading ?? ''))}
+    <section class="section">
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          <div>
+            {#if String(detailSlot.content?.running ?? '')}
+              <span class="running">{detailSlot.content.running}</span>
+            {/if}
+            {#if String(detailSlot.content?.heading ?? '')}
+              <h2 class="d-l">{detailSlot.content.heading}</h2>
+            {/if}
+          </div>
+          {#if String(detailSlot.content?.lead ?? '')}
+            <p class="body">{detailSlot.content.lead}</p>
+          {/if}
+        </div>
       </div>
-      {#if i % 2 === 0 && f.image}
-        <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
-      {/if}
-    </div>
-  </section>
-{/each}
+    </section>
+  {/if}
+
+  {#each detailed.slice(0, detailLimit) as f, i (f.id)}
+    {@const sand = detailBase === 'sand' ? i % 2 === 0 : i % 2 === 1}
+    <section class="section" class:section--sand={sand} class:section--black={detailBase === 'black'} id={f.id}>
+      <div class="wrap two-col two-col--media">
+        {#if i % 2 === 1 && f.image}
+          <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+        {/if}
+        <div>
+          <span class="running">Format {String(i + 1).padStart(2, '0')}</span>
+          <h2 class="d-l" style="margin:22px 0 24px">IMPACT <span class="red">{f.bracketName}</span></h2>
+          <p class="intro">{f.description}</p>
+          {#if f.ticks.length}
+            <ul class="ticks">
+              {#each f.ticks as tick (tick)}<li>{tick}</li>{/each}
+            </ul>
+          {/if}
+          {#if f.body}<p class="body" style="margin-top:24px">{f.body}</p>{/if}
+        </div>
+        {#if i % 2 === 0 && f.image}
+          <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+        {/if}
+      </div>
+    </section>
+  {/each}
+{/if}
 
 <!-- alle events -->
 <section class="section" id="alle">

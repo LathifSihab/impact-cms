@@ -514,6 +514,12 @@ rather than mangled.
 - [ ] Add a **Inhoud uit een type** section, source Fundamenten. The six
       foundations render on the public page — pulled from the content type, not
       retyped.
+- [ ] On **Events (lijstpagina)**, the `format-details` section controls the
+      `#days` / `#camps` / `#retreats` / `#community` blocks. Set **Maximum
+      aantal** to 2 and only Days and Camps render; give it a Titel and one
+      appears above them; change the Achtergrond and the alternation flips;
+      delete the section and they disappear. The words stay in Inhoud → Formats
+      throughout.
 - [ ] Untick **Zichtbaar op de site** and save. `/media` returns 404 to a
       visitor while staying editable in the backoffice.
 

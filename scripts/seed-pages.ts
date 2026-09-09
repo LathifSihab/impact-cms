@@ -442,6 +442,17 @@ const LIST_PAGES: ListPage[] = [
         }
       },
       {
+        anchor: 'format-details',
+        type: 'collection',
+        content: {
+          running: '',
+          heading: '',
+          lead: '',
+          source: 'formats',
+          limit: ''
+        }
+      },
+      {
         anchor: 'alle',
         type: 'sec_head',
         content: {
@@ -502,6 +513,17 @@ const LIST_PAGES: ListPage[] = [
           running: 'Our formats',
           heading: 'The medium changes. The foundations stay.',
           lead: 'Every format starts from the same six foundations. What changes is duration, intensity and age group.'
+        }
+      },
+      {
+        anchor: 'format-details',
+        type: 'collection',
+        content: {
+          running: '',
+          heading: '',
+          lead: '',
+          source: 'formats',
+          limit: ''
         }
       },
       {
