@@ -16,7 +16,8 @@ the live site and the production database, not recalled.
 | Images | 99 originals + 582 responsive variants, served from Supabase Storage |
 | Backoffice | live, guarded, one account |
 | Database | 19 migrations applied, fully seeded |
-| Dashboard tiers 1–4 | live; Plausible's half waits on a key (§6) |
+| Dashboard tiers 1–4 | live; Plausible traffic waits on an API key (§6) |
+| Analytics | tracking live behind the consent banner |
 | Signup endpoint | in-house at `/api/subscribe`, receipts in Postgres |
 
 What follows is what is *not* finished, ordered by what actually costs you
@@ -58,74 +59,29 @@ human.
 
 ---
 
-## 2. The box office link — **not urgent, and here is why**
+## 2. The box office link — **done**
 
-**Priority: low.** It changes nothing today.
+`PUBLIC_TICKET_TAILOR_BOX_OFFICE` is set to `https://buytickets.at/wemadeimpact`,
+which redirects to `tickettailor.com/events/wemadeimpact`.
 
-`PUBLIC_TICKET_TAILOR_BOX_OFFICE` is empty. But the link it fills only renders
-for an edition whose status is `open`:
+It still shows nowhere, and that is correct: the link only renders for an
+edition whose status is `open`, and all four are `waitlist` or `past`. Ticket
+Tailor also has zero events entered. When you are ready, do it in this order —
 
-```svelte
-{:else if e.status === 'open' && data.boxOffice}
-```
+1. Enter and publish the event in **Ticket Tailor**.
+2. Set the edition to **Inschrijvingen open** in `/admin/content/events`.
 
-Your four editions are `waitlist`, `past`, `waitlist`, `waitlist`. **None are
-open**, so the link has nowhere to appear. And Ticket Tailor's API returns zero
-events — nothing has been entered there yet, so a box office link would lead to
-an empty storefront.
-
-### When it starts to matter
-
-The moment you set an edition to **Inschrijvingen open** in the backoffice. Do
-these together:
-
-1. Enter the event in **Ticket Tailor** and publish it.
-2. Set the variable (below).
-3. Change the edition's status to `open` in `/admin/content/events`.
-
-Doing 3 before 1 and 2 gives visitors a button to an empty shop.
-
-### Where to find the value
-
-It is not in the API — I checked, there is no `box_offices` endpoint on this
-plan. Get it from the dashboard:
-
-**Ticket Tailor → Box office → Settings**, or open your public box office and
-copy the address. It looks like:
-
-```
-https://www.tickettailor.com/o/<your-account-slug>
-```
-
-Do **not** paste Ticket Tailor's embed snippet. It hardcodes the account id and
-a ref, which would put an account identifier in twenty files and make handover a
-code change instead of editing a box in a UI. `04-INTEGRATIONS.md` is explicit
-about this.
-
-### Steps
-
-```powershell
-cd cms
-
-vercel env add PUBLIC_TICKET_TAILOR_BOX_OFFICE production `
-  --type config `
-  --value "https://www.tickettailor.com/o/<your-slug>" `
-  --force --yes
-
-vercel deploy --prod --yes
-```
-
-### Verify
-
-Set one edition to `open` in the backoffice, then open its page. The primary
-button says **Bekijk tickets** and goes to your box office, not to
-`tickettailor.com`'s front page.
+Doing 2 first gives visitors a button to an empty shop.
 
 ---
 
 ## 3. Finish the Supabase auth setup
 
-**Priority: high, and it takes one minute.**
+**Nearly done — confirm you pressed Save.**
+
+The Site URL is filled in with `https://demo-impact-cms.vercel.app`. In the
+screenshot the **Save changes** button was still active, which is how that page
+looks when the value has been typed but not committed. Worth one glance.
 
 Supabase → **Authentication → URL Configuration → Site URL**:
 
@@ -238,64 +194,47 @@ required, and the basis for the two processors outside the EEA.
 
 ---
 
-## 6. Plausible traffic — built, and waiting on one key
+## 6. Plausible — tracking is live, the Stats API needs one key
 
-**Priority: low. The dashboard works without it.**
+**Tracking is wired and collecting.** This was broken in a way nobody would have
+noticed: `analytics.js` is written to stay inert until a domain exists, and
+nothing ever gave it one — no meta tag, and the script was not even in the
+layout's load list. The site collected nothing, so a Stats API key would have
+reported on an empty account.
 
-Tier 4 is built. It has two halves, and only one of them needs anything from
-you.
+Both meta tags are written from env now, and the script loads between
+`consent.js` and `main.js` so the goal queue is installed before `main.js` fires
+anything. It still waits for the **Statistics** category in the consent banner:
+loading analytics after someone chose "Necessary only" would make the banner a
+lie.
 
-### The half that already works
+```
+PUBLIC_PLAUSIBLE_DOMAIN = demo-impact-cms.vercel.app
+PUBLIC_PLAUSIBLE_SRC    = https://plausible.io/js/pa-jko49HYqqZaXcl3mYEgRx.js
+```
 
-**Attribution and conversion, from our own rows.** Since `/api/subscribe` came
-in-house, every signup is recorded with the page, referrer and campaign it
-arrived through. `/admin/signalen` now shows:
+> Check your Plausible dashboard lists the site as
+> `demo-impact-cms.vercel.app`. If it is registered under the Netlify domain
+> instead, change `PUBLIC_PLAUSIBLE_DOMAIN` to match — Plausible drops events
+> whose domain it does not recognise, silently.
 
-- signups over 90 days, split newsletter and waiting list
-- which campaign produced them
-- which page they landed on
-- which site referred them
-- the last ten, with their edition and language
-- **how many reached us but not Brevo** — those are not lost, they are sitting
-  in the table waiting to be replayed, and without a count nobody would look
+**The dashboard's traffic panel still needs a separate credential.** The script
+you pasted is the *tracking* side; the *reading* side is an API key:
 
-That is the brief's *"which campaign/page/waitlist drove each signup"*, answered
-from our own data rather than inferred from a traffic tool. No key, no plan, no
-external dependency.
-
-### The half that needs a key
-
-**Visitor counts from Plausible.** The panel currently says:
-
-> Nog niet gekoppeld. Zet PLAUSIBLE_API_KEY en PUBLIC_PLAUSIBLE_DOMAIN om
-> bezoekcijfers te tonen.
-
-To connect it:
-
-1. Plausible → your site → **Settings → API keys** → create a key.
+1. Plausible → **Settings → API keys** → create one.
 2. Then:
 
 ```powershell
 cd cms
 vercel env add PLAUSIBLE_API_KEY production --type secret --value "<key>" --force --yes
-vercel env add PUBLIC_PLAUSIBLE_DOMAIN production --type config --value "<your-site-domain>" --force --yes
 vercel deploy --prod --yes
 ```
 
-The domain is the site name as Plausible knows it, not a URL — e.g.
-`demo-impact-c399e3.netlify.app`.
-
-**The Stats API is plan-gated.** If it is not on your plan, the panel says so
-specifically rather than showing an empty chart — "Plausible geeft geen toegang
-tot de Stats API". Upgrading or linking out to the Plausible dashboard are both
-reasonable answers; half a chart is not.
-
-Once connected, the conversion figure appears too: their visitors over our
-signups, which is a real ratio rather than two numbers from two systems that
-count differently.
+The Stats API is plan-gated. If it is not on your plan the panel says so
+specifically rather than showing an empty chart, and the attribution half of
+that panel keeps working regardless — it reads our own rows, not Plausible.
 
 ---
-
 
 ## 7. Page fidelity — 84.7%, and most of the rest should stay
 
@@ -352,14 +291,13 @@ alone so the seed stays a faithful copy of the source content.
 
 ## Suggested order
 
-1. **§3** — Supabase Site URL. One minute.
-2. **§1** — the waitlist endpoint. One command, one deploy, and the site becomes
-   usable rather than a brochure.
-3. **§4** — tick the figures and experts if the answers are yes. Two pages fill
-   in, no deploy needed.
-4. **§5** — send the privacy text to your lawyers. It is the long pole; start it
-   early even though it finishes late.
-5. **§6** — add the Plausible key if the Stats API is on your plan. The rest of
-   that panel already works without it.
-6. **§2** — the box office, when you have a real event in Ticket Tailor.
-7. **§7** — the remaining fidelity, last, because most of it should not change.
+1. **§3** — confirm the Supabase Site URL saved. One glance.
+2. **§4** — tick the figures, experts and clip consent where the answers are
+   yes. **This is the biggest visible change left**, it needs no deploy, and it
+   is what makes three empty blocks fill in.
+3. **§5** — send the privacy text to your lawyers. The long pole; start it early
+   even though it finishes late.
+4. **§6** — add the Plausible API key if the Stats API is on your plan.
+5. **§7** — the remaining fidelity, last, because most of it should not change.
+
+§1 and §2 are done.
