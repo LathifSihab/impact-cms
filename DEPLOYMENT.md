@@ -20,14 +20,47 @@ You need:
 - A **Vercel** account, and permission to create a project
 - The **repository** pushed to GitHub (it already is:
   `github.com/LathifSihab/impact-cms`)
-- Node 22 and npm locally
-- The **Supabase CLI** — `npm i -g supabase`, or `npx supabase` throughout
-- The **Vercel CLI** — `npm i -g vercel`
+- Node 22 or newer, and npm
 - The client's content folder, if you are seeding: the handoff's
   `reference/content/`
 - The photography, if you are migrating images: the handoff's `site/assets/`
 
 You do **not** need Docker unless you also want to run Supabase locally.
+
+### 0. Install the two CLIs first
+
+Do this before anything else. Both are needed, and neither ships with Node.
+
+```bash
+npm i -g vercel
+npm i -g supabase
+```
+
+Then check all of it in one go — **PowerShell**:
+
+```powershell
+foreach ($t in 'vercel','supabase','node','npm') {
+  $c = Get-Command $t -ErrorAction SilentlyContinue
+  if ($c) { "{0,-10} OK" -f $t } else { "{0,-10} MISSING" -f $t }
+}
+```
+
+**bash / zsh**:
+
+```bash
+for t in vercel supabase node npm; do
+  command -v "$t" >/dev/null && echo "$t OK" || echo "$t MISSING"
+done
+```
+
+**Check:** all four say `OK`. If `vercel` says
+`The term 'vercel' is not recognized`, the global install did not happen or the
+shell has not picked it up — close the terminal and open a new one, then check
+again.
+
+> **Prefer not to install globally?** Put `npx ` in front of every `vercel` and
+> `supabase` command in this guide. `npx vercel login`, `npx supabase db push`,
+> and so on. It works identically and downloads on first use.
 
 Two keys you will collect along the way. Keep them out of the repository and out
 of chat:
