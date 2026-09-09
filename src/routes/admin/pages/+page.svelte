@@ -15,7 +15,10 @@
 <div class="page">
   <header>
     <span class="label">[ Pagina's ]</span>
-    <h1 class="d-m">Pagina-instellingen</h1>
+    <div class="head-row">
+      <h1 class="d-m">Pagina-instellingen</h1>
+      <a class="pill pill--primary" href="/admin/pages/new">Nieuwe pagina</a>
+    </div>
     <p class="body">
       De vaste pagina's van de site: hero, secties en SEO. Events en Journal staan hier niet
       tussen — dat zijn lijsten, die komen uit hun eigen inhoudstypes.

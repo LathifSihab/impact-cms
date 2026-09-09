@@ -337,6 +337,24 @@ reach the renderer.
 `published` is a draft flag, not a consent gate: unpublished pages stay editable
 and return 404 to visitors, enforced by RLS rather than by the route.
 
+### The nav follows what exists
+
+The shell links to a page when this app serves it and out to the static build
+when it does not, driven by the published slugs rather than a hand-kept list. As
+more pages moved into the CMS the nav followed them without anyone editing it.
+`PUBLIC_STATIC_SITE_BASE` now only catches what is genuinely still elsewhere —
+today, the brochure PDF.
+
+### Creating and deleting pages
+
+Full CRUD, with one guard: `home`, `events`, `journal` and `event-detail` are
+read by route files, so deleting one would not remove a page from the site, it
+would leave a route reading a record that is not there. They stay editable and
+cannot be deleted — checked on the server, not just hidden in the UI.
+
+A new page starts unpublished, because an empty page should not appear on the
+site the moment it is created.
+
 ### Templates
 
 `event-detail` is a page whose content is read by another route rather than

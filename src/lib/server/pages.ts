@@ -193,3 +193,30 @@ export async function getPublishedPage(
 }
 
 
+
+/**
+ * Slugs of the pages this app actually serves, for the nav.
+ *
+ * The shell links to a page when the CMS renders it and out to the static build
+ * when it does not, so the nav follows what exists rather than a list someone
+ * has to keep in step. Templates are excluded: they have no URL.
+ */
+export async function publishedSlugs(db: SupabaseClient): Promise<string[]> {
+  const { data, error } = await db
+    .from('pages')
+    .select('id')
+    .eq('published', true)
+    .eq('is_template', false);
+  if (error) return [];
+  return [...new Set(((data ?? []) as Row[]).map((r) => String(r.id)))];
+}
+
+/** Remove one page in one language. Sections go with it via the foreign key. */
+export async function deletePage(
+  db: SupabaseClient,
+  id: string,
+  locale: 'nl' | 'en'
+): Promise<void> {
+  const { error } = await db.from('pages').delete().eq('id', id).eq('locale', locale);
+  if (error) throw error;
+}

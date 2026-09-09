@@ -72,3 +72,15 @@ export function sectionAt(page: PageRecord | null, anchor: string): PageSection 
 export function extraSections(page: PageRecord | null, slots: string[]): PageSection[] {
   return (page?.sections ?? []).filter((s) => !s.anchor || !slots.includes(s.anchor));
 }
+
+/**
+ * Pages a route depends on by name.
+ *
+ * `home`, `events` and `journal` are rendered by their own route files, and
+ * `event-detail` supplies the chrome for every edition. Deleting one would not
+ * remove a page from the site — it would leave a route reading a record that is
+ * no longer there. They stay editable; they just cannot be removed from here.
+ */
+export const SYSTEM_PAGES = ['home', 'events', 'journal', 'event-detail'];
+
+export const isSystemPage = (id: string): boolean => SYSTEM_PAGES.includes(id);

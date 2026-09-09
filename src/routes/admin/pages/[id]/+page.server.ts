@@ -1,5 +1,7 @@
-import { error, fail } from '@sveltejs/kit';
-import { getPage, pageLocales, savePage } from '$lib/server/pages';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { deletePage, getPage, pageLocales, savePage } from '$lib/server/pages';
+import { isSystemPage } from '$lib/pages';
+import { removeRecordFolder } from '$lib/server/uploads';
 import { parseSections } from '$lib/server/page-form';
 import { cleanupOrphans } from '$lib/server/form-uploads';
 import { UploadError, isManaged, save } from '$lib/server/uploads';
@@ -24,7 +26,7 @@ export const load: PageServerLoad = async ({ params, url, locals }) => {
       ? { ...dutch, locale, sections: dutch.sections.map((s) => ({ ...s })) }
       : error(404, 'Deze pagina bestaat niet.'));
 
-  return { page: draft, locale, locales, exists: !!page };
+  return { page: draft, locale, locales, exists: !!page, canDelete: !isSystemPage(params.id) };
 };
 
 export const actions: Actions = {
@@ -93,5 +95,32 @@ export const actions: Actions = {
     }
 
     return { saved: true };
+  },
+
+  delete: async ({ params, request, url, locals }) => {
+    const form = await request.formData();
+    const locale = String(form.get('locale') ?? url.searchParams.get('locale')) === 'en' ? 'en' : 'nl';
+
+    /* Checked on the server, not just hidden in the UI: home, events, journal
+       and event-detail are read by route files, so removing one would leave a
+       route pointing at nothing. */
+    if (isSystemPage(params.id)) {
+      return fail(400, {
+        problem: {
+          message: 'Deze pagina hoort bij een vaste route en kan niet verwijderd worden.',
+          detail: undefined
+        }
+      });
+    }
+
+    try {
+      await deletePage(locals.supabase, params.id, locale);
+      await removeRecordFolder('pages', `${params.id}-${locale}`);
+    } catch (e) {
+      const err = e as { message?: string };
+      return fail(400, { problem: { message: 'Verwijderen is niet gelukt.', detail: err.message } });
+    }
+
+    redirect(303, '/admin/pages');
   }
 };

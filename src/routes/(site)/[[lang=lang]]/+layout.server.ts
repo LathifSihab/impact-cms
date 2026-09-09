@@ -1,8 +1,9 @@
 import { env } from '$env/dynamic/public';
 import type { Locale } from '$lib/collections';
+import { publishedSlugs } from '$lib/server/pages';
 import type { LayoutServerLoad } from './$types';
 
-export const load: LayoutServerLoad = async ({ params }) => {
+export const load: LayoutServerLoad = async ({ params, locals }) => {
   // The matcher only admits 'en', so anything else is the Dutch default.
   const locale: Locale = params.lang === 'en' ? 'en' : 'nl';
 
@@ -14,6 +15,7 @@ export const load: LayoutServerLoad = async ({ params }) => {
      * still the static build, so the nav points at it rather than at dead
      * relative links.
      */
-    staticBase: env.PUBLIC_STATIC_SITE_BASE ?? ''
+    staticBase: env.PUBLIC_STATIC_SITE_BASE ?? '',
+    slugs: await publishedSlugs(locals.supabase)
   };
 };

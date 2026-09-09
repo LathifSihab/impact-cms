@@ -9,6 +9,7 @@
   const p = $derived(data.page);
   const errors = $derived(form?.errors ?? {});
   let busy = $state(false);
+  let confirmingDelete = $state(false);
 
   const HERO_VARIANTS = [
     { value: 'page', label: 'Standaard paginahero' },
@@ -197,6 +198,22 @@
       <a class="pill pill--quiet" href="/admin/pages">Terug naar de lijst</a>
       <span class="spacer"></span>
       <a class="pill pill--quiet pill--sm" href={publicHref} target="_blank" rel="noreferrer">Bekijk ↗</a>
+
+      {#if data.canDelete && data.exists}
+        {#if confirmingDelete}
+          <span class="meta">Zeker weten?</span>
+          <button class="pill pill--danger pill--sm" formaction="?/delete" formnovalidate disabled={busy}>
+            Ja, verwijderen
+          </button>
+          <button type="button" class="pill pill--quiet pill--sm" onclick={() => (confirmingDelete = false)}>
+            Annuleren
+          </button>
+        {:else}
+          <button type="button" class="pill pill--danger pill--sm" onclick={() => (confirmingDelete = true)}>
+            Verwijderen
+          </button>
+        {/if}
+      {/if}
     </div>
   </form>
 </div>

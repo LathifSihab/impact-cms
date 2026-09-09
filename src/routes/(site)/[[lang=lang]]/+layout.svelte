@@ -60,6 +60,6 @@
   });
 </script>
 
-<SiteShell locale={data.locale} {section} staticBase={data.staticBase}>
+<SiteShell locale={data.locale} {section} staticBase={data.staticBase} slugs={data.slugs}>
   {@render children()}
 </SiteShell>

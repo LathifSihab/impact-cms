@@ -18,19 +18,44 @@
     locale,
     section = '',
     staticBase = '',
+    slugs = [],
     children
   }: {
     locale: Locale;
     /** Marks the current top-level nav item, as the static site's data-nav does. */
     section?: 'events' | 'journal' | '';
     staticBase?: string;
+    /** Pages this app serves. Anything else still belongs to the static build. */
+    slugs?: string[];
     children: import('svelte').Snippet;
   } = $props();
 
   const p = $derived((rest: string) => path(locale, rest));
 
-  /** A page still served by the static site. */
+  /** `over.html#team` -> slug `over`, hash `#team`. */
+  const parse = (file: string) => {
+    const [name, hash] = file.split('#');
+    const slug = name.replace(/\.html$/, '');
+    return { slug: slug === 'index' ? 'home' : slug, hash: hash ? `#${hash}` : '' };
+  };
+
+  /**
+   * A nav destination.
+   *
+   * Every one of these used to point at the static build, from when the CMS
+   * rendered only Events and Journal. It renders most of the site now, so a link
+   * goes to the page when this app serves it and out to the static build only
+   * when it does not. Driving that from the published slugs rather than a hand
+   * kept list means the nav follows reality as more pages move across.
+   */
   const ext = $derived((file: string) => {
+    const { slug, hash } = parse(file);
+
+    if (slugs.includes(slug)) {
+      return slug === 'home' ? p('/') + hash : p(`/${slug}`) + hash;
+    }
+
+    // Not served here: the brochure, or a page not configured yet.
     const base = staticBase.replace(/\/$/, '');
     const prefix = locale === 'en' ? '/en' : '';
     return base ? `${base}${prefix}/${file}` : `${prefix}/${file}`;
