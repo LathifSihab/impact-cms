@@ -694,7 +694,58 @@ Expect `404` for all three.
 
 **On Git Bash, export `MSYS_NO_PATHCONV=1` before these.** It rewrites a leading
 `/uploads/...` argument into `C:/Program Files/Git/uploads/...`, which makes the
-orphan-cleanup test silently pass for the wrong reason — it cost time here.
+orphan-cleanup test silently pass for the wrong reason — it cost time here, and
+then cost it again. The victim is the *current value* field (`logo=`,
+`hero_image=`): mangled, the server sees a path it does not manage, decides
+there is no old file, and cleans nothing up while still returning 200.
+
+## Responsive image variants
+
+Every uploaded photo gets a ladder of AVIF and WebP copies beside it, and the
+public site renders `<picture>`. Backfill anything older:
+
+```bash
+npm run images:variants
+```
+
+Expect `0 hernoemd, ... al compleet` on a second run — it is idempotent.
+
+- [ ] `uploads/pages/home-nl/` holds `hero-<hash>-1600.jpg` next to
+      `hero-<hash>-1600.420.avif`, `.640.avif`, `.900.avif`, `.1280.avif`,
+      `.1600.avif` and the same five as `.webp`.
+- [ ] View source on `/`: every uploaded image is inside a `<picture>` with an
+      `image/avif` source, an `image/webp` source and an `<img>` fallback.
+- [ ] The `sizes` attribute is there. Without it a phone assumes the image fills
+      the viewport and fetches a far larger file than the layout will show.
+- [ ] DevTools → Network, throttled to a phone viewport: the homepage fetches
+      roughly 176 KB of images, not 1.5 MB.
+
+```bash
+# a missing rung is generated on request rather than 404ing
+rm uploads/pages/home-nl/hero-*-1600.640.avif
+curl -s -o /dev/null -w "%{http_code}
+" "$BASE/uploads/pages/home-nl/hero-<hash>-1600.640.avif"
+ls uploads/pages/home-nl/ | grep 640.avif
+```
+
+Expect `200`, and the file back on disk.
+
+```bash
+# but only widths on the ladder, and only at or below the original's own width
+for w in 517 2560; do
+  curl -s -o /dev/null -w "%{http_code}
+" "$BASE/uploads/pages/home-nl/hero-<hash>-1600.$w.avif"
+done
+```
+
+Expect `404` for both, and no new file written. Otherwise this is an open
+image-resizing service and anyone can spend the server's CPU on it.
+
+- [ ] Replace a page hero. The old original **and all ten of its variants** are
+      deleted — check the folder, not just the database.
+- [ ] Upload something 3000px wide. It is stored at 2560 and named `-2560`.
+- [ ] Upload a GIF. No ladder is generated and the page renders a plain `<img>`
+      — a still frame of an animation is not the same picture.
 
 ---
 

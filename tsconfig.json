@@ -2,6 +2,9 @@
   "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "allowJs": true,
+    // Scripts under scripts/ run on bare node, whose ESM resolver needs the
+    // extension; the same modules are imported by Vite, which accepts it too.
+    "allowImportingTsExtensions": true,
     "checkJs": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,

@@ -25,6 +25,8 @@ import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { env } from '$env/dynamic/private';
+import { intrinsicWidth, isConvertible, LADDER, MAX_WIDTH, VARIANT_FORMATS } from '../images';
+import { generate, normalise } from './variants';
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
 
@@ -135,13 +137,36 @@ export async function save(
   const dir = join(UPLOAD_DIR, safeSegment(collection), safeSegment(recordId));
   await mkdir(dir, { recursive: true });
 
-  const digest = createHash('sha256').update(buffer).digest('hex').slice(0, 10);
-  const name = `${safeSegment(field)}-${digest}${ALLOWED[detected]}`;
-  await writeFile(join(dir, name), buffer);
+  const ext = ALLOWED[detected];
+
+  /* A photo is downscaled to the widest size the site ever renders, and its
+     intrinsic width goes into the filename. That width is what lets the
+     renderer build a srcset during SSR without touching the disk — see
+     src/lib/images.ts for the convention. */
+  let stored: Uint8Array<ArrayBufferLike> = buffer;
+  let width: number | null = null;
+  if (isConvertible(ext)) {
+    const normalised = await normalise(buffer, ext);
+    if (normalised) {
+      stored = normalised.bytes;
+      width = normalised.width;
+    }
+  }
+
+  const digest = createHash('sha256').update(stored).digest('hex').slice(0, 10);
+  const base = `${safeSegment(field)}-${digest}`;
+  const name = width ? `${base}-${width}${ext}` : `${base}${ext}`;
+  const onDisk = join(dir, name);
+  await writeFile(onDisk, stored);
+
+  /* Generating the ladder now keeps the first visitor off the slow path. It is
+     deliberately not awaited into the failure path: if the encoder gives up,
+     the upload still succeeded and the image still renders, just at one size. */
+  if (width) await generate(onDisk, width);
 
   return {
     path: `${UPLOAD_URL_PREFIX}/${safeSegment(collection)}/${safeSegment(recordId)}/${name}`,
-    bytes: file.size,
+    bytes: stored.byteLength,
     type: detected
   };
 }
@@ -171,11 +196,64 @@ export function contentTypeFor(path: string): string {
   return found ? found[0] : 'application/octet-stream';
 }
 
-/** Remove one managed file. Silent when it is already gone. */
+/**
+ * Build one missing variant on request.
+ *
+ * The path is `<stem>-<intrinsic>.<width>.<format>`, and both the width and the
+ * format have to be ones we would have generated ourselves — otherwise this is
+ * an open image-resizing service, and anyone could spend the server's CPU by
+ * asking for ten thousand arbitrary sizes.
+ */
+export async function ensureVariant(requested: string): Promise<string | null> {
+  const m = requested.match(/^(.*)\.(\d{2,5})\.(avif|webp)$/i);
+  if (!m) return null;
+
+  const [, stem, widthText, format] = m;
+  const width = Number(widthText);
+  if (!VARIANT_FORMATS.includes(format.toLowerCase() as (typeof VARIANT_FORMATS)[number])) {
+    return null;
+  }
+
+  // The original keeps its own extension, so try each one we accept.
+  const original = ['.jpg', '.jpeg', '.png', '.webp', '.avif']
+    .map((ext) => resolveOnDisk(stem + ext))
+    .find(Boolean);
+  if (!original) return null;
+
+  const intrinsic = intrinsicWidth(original);
+  if (!intrinsic) return null;
+
+  // Only a rung of the ladder this original actually has.
+  const ceiling = Math.min(intrinsic, MAX_WIDTH);
+  const allowed = width === ceiling || (LADDER.includes(width) && width < ceiling);
+  if (!allowed) return null;
+
+  const written = await generate(original, intrinsic, { width, format: format.toLowerCase() });
+  return written > 0 ? resolveOnDisk(requested) : null;
+}
+
+/**
+ * Remove one managed file, and the variant ladder generated from it.
+ *
+ * Forgetting the ladder would leave six or twelve orphans behind every replaced
+ * image, which on a site with this much photography adds up quickly.
+ */
 export async function remove(publicPath: string): Promise<void> {
   if (!isManaged(publicPath)) return;
-  const onDisk = resolveOnDisk(publicPath.slice(UPLOAD_URL_PREFIX.length));
+  const relative = publicPath.slice(UPLOAD_URL_PREFIX.length);
+  const onDisk = resolveOnDisk(relative);
   if (onDisk) await rm(onDisk, { force: true });
+
+  const intrinsic = intrinsicWidth(relative);
+  if (!intrinsic) return;
+
+  const stem = relative.replace(/\.[a-z0-9]+$/i, '');
+  for (const width of [...LADDER, Math.min(intrinsic, MAX_WIDTH)]) {
+    for (const format of VARIANT_FORMATS) {
+      const variant = resolveOnDisk(`${stem}.${width}.${format}`);
+      if (variant) await rm(variant, { force: true });
+    }
+  }
 }
 
 /** Remove a whole record's folder, used when the record itself is deleted. */

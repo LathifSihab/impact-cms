@@ -8,6 +8,7 @@
    * generic block list.
    */
   import { imageUrl } from '$lib/i18n';
+  import Img from './Img.svelte';
   import { renderMarkdown } from '$lib/markdown';
   import type { PageSection } from '$lib/pages';
   import type { CollectionItem } from '$lib/server/page-content';
@@ -85,7 +86,7 @@
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
       <div class="wrap two-col" class:two-col--media={hasImage}>
         {#if left && str(c, 'image')}
-          <img src={imageUrl(str(c, 'image'))} alt={str(c, 'heading')} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+          <Img src={str(c, 'image')} alt={str(c, 'heading')} role="wide" style="width:100%;aspect-ratio:16/9;object-fit:cover" />
         {/if}
         <div>
           {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
@@ -118,7 +119,7 @@
           {/if}
         </div>
         {#if !left && str(c, 'image')}
-          <img src={imageUrl(str(c, 'image'))} alt={str(c, 'heading')} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+          <Img src={str(c, 'image')} alt={str(c, 'heading')} role="wide" style="width:100%;aspect-ratio:16/9;object-fit:cover" />
         {/if}
       </div>
     </section>
@@ -154,7 +155,7 @@
         {#each items as it (it.id)}
           <article class="strip-card">
             <div class="strip-img">
-              {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+              {#if it.image}<Img src={it.image} alt={it.title} role="card" loading="lazy" />{/if}
               <span class="chip">[{it.number ?? ''}] {it.title}</span>
             </div>
             {#if it.bodyLong || it.body}<p class="body">{it.bodyLong || it.body}</p>{/if}
@@ -198,7 +199,7 @@
             {#each items as it (it.id)}
               {#if it.image}
                 <a href={it.href || '#'} target="_blank" rel="noopener">
-                  <img src={imageUrl(it.image)} alt={it.title} loading="lazy" />
+                  <Img src={it.image} alt={it.title} role="portrait" loading="lazy" />
                 </a>
               {/if}
             {/each}
@@ -217,7 +218,7 @@
           {#each items as it (it.id)}
             <a class="event-row" href={it.href}>
               <div class="event-row-main">
-                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} />{/if}
+                {#if it.image}<Img src={it.image} alt={it.title} role="card" />{/if}
                 <div><h3>{it.title}</h3></div>
                 <div class="when meta">{it.subtitle}</div>
                 <div class="cta">
@@ -230,7 +231,7 @@
           <div class="cards-4" style="margin-top:26px">
             {#each items as it (it.id)}
               <a class="jcard" href={it.href}>
-                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+                {#if it.image}<Img src={it.image} alt={it.title} role="card" loading="lazy" />{/if}
                 <h3>{it.title}</h3>
                 {#if it.subtitle}<p class="meta">{it.subtitle}</p>{/if}
               </a>
@@ -249,7 +250,7 @@
           <div class="cards-3" style="margin-top:26px">
             {#each items as it (it.id)}
               <div class="age">
-                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+                {#if it.image}<Img src={it.image} alt={it.title} role="card" loading="lazy" />{/if}
                 <div class="inner">
                   <h3>{it.title}</h3>
                   {#if it.subtitle}<span class="tag">{it.subtitle}</span>{/if}
@@ -274,7 +275,7 @@
           {#each items as it (it.id)}
             <div class="fund-long">
               {#if it.image}
-                <img class="fund-long-img" src={imageUrl(it.image)} alt={it.title} loading="lazy" />
+                <Img class="fund-long-img" src={it.image} alt={it.title} role="wide" loading="lazy" />
               {/if}
               <div>
                 <span class="num">{it.number ?? ''}</span>

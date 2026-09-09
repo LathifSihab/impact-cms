@@ -14,7 +14,8 @@
     "seed": "node scripts/seed.ts",
     "seed:pages": "node scripts/seed-pages.ts",
     "user:create": "node scripts/create-user.ts",
-    "images:migrate": "node scripts/migrate-images.ts"
+    "images:migrate": "node scripts/migrate-images.ts",
+    "images:variants": "node scripts/backfill-variants.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.7",
@@ -31,6 +32,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.58.0",
-    "gray-matter": "^4.0.3"
+    "gray-matter": "^4.0.3",
+    "sharp": "^0.35.4"
   }
 }

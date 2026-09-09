@@ -569,18 +569,64 @@ async function keepSectionImages(pageId: string, locale: string, next: Section[]
     .eq('page_id', pageId)
     .eq('locale', locale);
 
-  const managed = new Map<string, string>();
+  /* An uploaded value can sit anywhere in a section's content — `image` for a
+     media block, but also `clips[2].poster` in the reel. Collecting them by
+     their path through the object means every upload survives a reseed, not
+     just the one at the top level. Reading only `image` here is what silently
+     reverted the reel's clips to their seeded `assets/...` paths. */
+  const managed = new Map<string, Map<string, string>>();
   for (const row of (data ?? []) as Record<string, any>[]) {
-    const image = String(row.content?.image ?? '');
-    if (image.startsWith('/uploads/')) managed.set(row.anchor || `#${row.position}`, image);
+    const found = new Map<string, string>();
+    collectUploads(row.content ?? {}, '', found);
+    if (found.size) managed.set(row.anchor || `#${row.position}`, found);
   }
   if (managed.size === 0) return next;
 
   return next.map((section, i) => {
     const keep = managed.get(section.anchor || `#${i}`);
-    if (!keep || !section.content.image) return section;
-    return { ...section, content: { ...section.content, image: keep } };
+    if (!keep) return section;
+    return { ...section, content: restoreUploads(section.content, '', keep) as Section['content'] };
   });
+}
+
+/** Every `/uploads/` string in an object, keyed by its path: `clips.2.poster`. */
+function collectUploads(value: unknown, path: string, out: Map<string, string>): void {
+  if (typeof value === 'string') {
+    if (value.startsWith('/uploads/')) out.set(path, value);
+    return;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((v, i) => collectUploads(v, path ? `${path}.${i}` : String(i), out));
+    return;
+  }
+  if (value && typeof value === 'object') {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      collectUploads(v, path ? `${path}.${k}` : k, out);
+    }
+  }
+}
+
+/**
+ * Put the kept uploads back at the same paths in the freshly lifted content.
+ *
+ * A path that no longer exists is dropped: if the section shrank from four
+ * clips to three, the fourth clip's upload has nowhere to go, and inventing a
+ * slot for it would put a video back into a reel the site no longer shows.
+ */
+function restoreUploads(value: unknown, path: string, keep: Map<string, string>): unknown {
+  const kept = keep.get(path);
+  if (typeof value === 'string') return kept ?? value;
+  if (Array.isArray(value)) {
+    return value.map((v, i) => restoreUploads(v, path ? `${path}.${i}` : String(i), keep));
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      out[k] = restoreUploads(v, path ? `${path}.${k}` : k, keep);
+    }
+    return out;
+  }
+  return value;
 }
 
 /* --- run ------------------------------------------------------------------ */

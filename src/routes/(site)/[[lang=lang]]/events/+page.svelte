@@ -17,6 +17,7 @@
    * it, so it is reproduced here as written.
    */
   import { imageUrl, path, translator } from '$lib/i18n';
+  import Img from '$lib/components/site/Img.svelte';
   import PageSections from '$lib/components/site/PageSections.svelte';
   import { sectionAt, extraSections } from '$lib/pages';
   import type { PageData } from './$types';
@@ -84,7 +85,7 @@
 
 <header class="hero hero--page" data-reveal-root>
   {#if cfg?.heroImage}
-    <img src={imageUrl(cfg.heroImage)} alt={cfg.heroTitle} />
+    <Img src={cfg.heroImage} alt={cfg.heroTitle} role="wide" />
   {/if}
   <div class="hero-content wrap">
     <div>
@@ -129,7 +130,7 @@
     {#each upcoming as e (e.id)}
       <div class="event-row">
         <a class="event-row-main" href={p(`/events/${e.id}`)}>
-          <img src={imageUrl(e.heroImage)} alt={e.title} />
+          <Img src={e.heroImage} alt={e.title} role="card" />
           <div>
             <span class="tag">{e.formatName ?? ''}</span>
             {#if e.price}<span class="tag tag--dim">{e.price}</span>{/if}
@@ -250,7 +251,7 @@
     <section class="section" class:section--sand={sand} class:section--black={detailBase === 'black'} id={f.id}>
       <div class="wrap two-col two-col--media">
         {#if i % 2 === 1 && f.image}
-          <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+          <Img src={f.image} alt={f.name} role="wide" style="width:100%;aspect-ratio:16/9;object-fit:cover" />
         {/if}
         <div>
           <span class="running">Format {String(i + 1).padStart(2, '0')}</span>
@@ -264,7 +265,7 @@
           {#if f.body}<p class="body" style="margin-top:24px">{f.body}</p>{/if}
         </div>
         {#if i % 2 === 0 && f.image}
-          <img src={imageUrl(f.image)} alt={f.name} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
+          <Img src={f.image} alt={f.name} role="wide" style="width:100%;aspect-ratio:16/9;object-fit:cover" />
         {/if}
       </div>
     </section>

@@ -11,6 +11,7 @@
    * reimplementing it.
    */
   import { formatDate, imageUrl, path, translator } from '$lib/i18n';
+  import Img from '$lib/components/site/Img.svelte';
   import { JOURNAL_CATEGORIES } from '$lib/collections';
   import PageSections from '$lib/components/site/PageSections.svelte';
   import { extraSections } from '$lib/pages';
@@ -41,7 +42,7 @@
 
 <header class="hero hero--page" data-reveal-root>
   {#if cfg?.heroImage}
-    <img src={imageUrl(cfg.heroImage)} alt={cfg.heroTitle} />
+    <Img src={cfg.heroImage} alt={cfg.heroTitle} role="wide" />
   {/if}
   <div class="hero-content wrap">
     <div>
@@ -62,7 +63,7 @@
   <section class="section" style="padding-top:0">
     <div class="wrap">
       <a class="feature" data-cat={feature.category} href={p(`/journal/${feature.id}`)}>
-        <img src={imageUrl(feature.image)} alt={feature.alt} loading="lazy" />
+        <Img src={feature.image} alt={feature.alt} role="wide" loading="lazy" />
         <div>
           <span class="tag">{catLabel(feature.category)}</span>
           <h2 class="d-l d-l--48" style="margin:14px 0 18px">{feature.title}</h2>
@@ -91,7 +92,7 @@
     <div class="cards-3" data-filter-list>
       {#each rest as post (post.id)}
         <a class="jcard" data-cat={post.category} href={p(`/journal/${post.id}`)}>
-          <img src={imageUrl(post.image)} alt={post.alt} loading="lazy" />
+          <Img src={post.image} alt={post.alt} role="card" loading="lazy" />
           <span class="tag">{catLabel(post.category)}</span>
           <h3>{post.title}</h3>
           <p class="meta">{post.meta}</p>

@@ -12,6 +12,7 @@
    * details.faq, gallery, band, news-band.
    */
   import { imageUrl, path, translator } from '$lib/i18n';
+  import Img from '$lib/components/site/Img.svelte';
   import { sectionAt } from '$lib/pages';
   import type { PageData } from './$types';
 
@@ -61,7 +62,7 @@
 
 <header class="hero hero--event" data-reveal-root>
   {#if e.heroImage}
-    <img src={imageUrl(e.heroImage)} alt={e.title} />
+    <Img src={e.heroImage} alt={e.title} role="wide" />
   {/if}
   <div class="hero-content wrap">
     <div class="pills reveal">
@@ -290,7 +291,7 @@
       </div>
       <div class="gallery">
         {#each e.gallery as g (g.src)}
-          <img src={imageUrl(g.src)} alt={g.alt} loading="lazy" />
+          <Img src={g.src} alt={g.alt} role="card" loading="lazy" />
         {/each}
       </div>
     </div>
@@ -304,7 +305,7 @@
       <div class="logos" style="margin-top:26px">
         {#each e.partners as pt (pt.id)}
           <a href={pt.url} target="_blank" rel="noopener">
-            <img src={imageUrl(pt.logo)} alt={pt.name} loading="lazy" />
+            <Img src={pt.logo} alt={pt.name} role="portrait" loading="lazy" />
           </a>
         {/each}
       </div>

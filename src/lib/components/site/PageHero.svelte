@@ -8,6 +8,7 @@
    * else keeps the simpler page hero. Both come from the same record.
    */
   import { imageUrl } from '$lib/i18n';
+  import Img from './Img.svelte';
   import type { PageRecord } from '$lib/pages';
 
   let { page }: { page: PageRecord } = $props();
@@ -30,7 +31,7 @@
 
 <header class={variantClass} data-reveal-root>
   {#if page.heroImage}
-    <img src={imageUrl(page.heroImage)} alt={page.heroTitle} />
+    <Img src={page.heroImage} alt={page.heroTitle} role="wide" />
   {/if}
 
   <div class="hero-content wrap">

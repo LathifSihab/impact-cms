@@ -9,7 +9,11 @@ build
 # uploaded images — see README. Deliberately not committed: the photography
 # includes minors whose written parental consent is not held, and this repo is
 # public. Back the folder up with the rest of the deploy, not with git.
-uploads/
+#
+# Anchored with a leading slash. Unanchored, `uploads/` also matched
+# src/routes/uploads/, which is the route that *serves* the folder — so a fresh
+# clone had the images ignored and no code to serve them either.
+/uploads/
 
 # Photography and video: large, and the photography includes minors whose
 # written parental consent is not held. Drop them in locally; do not commit.

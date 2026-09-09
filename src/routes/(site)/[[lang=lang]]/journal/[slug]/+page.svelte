@@ -9,6 +9,7 @@
    * same product rather than inventing a new layout.
    */
   import { formatDate, imageUrl, path, translator } from '$lib/i18n';
+  import Img from '$lib/components/site/Img.svelte';
   import { renderMarkdown } from '$lib/markdown';
   import type { PageData } from './$types';
 
@@ -40,9 +41,10 @@
 
 <section class="section" style="padding-top:0">
   <div class="wrap" style="max-width:900px">
-    <img
-      src={imageUrl(post.image)}
+    <Img
+      src={post.image}
       alt={post.alt}
+      role="wide"
       style="width:100%;aspect-ratio:16/9;object-fit:cover;background:var(--placeholder)"
     />
     <p class="meta" style="margin-top:14px">
