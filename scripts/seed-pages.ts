@@ -285,6 +285,15 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     ];
     const match = asCollection.find(([needle]) => inner.includes(needle));
     if (match) {
+      /* The strip carries a two-paragraph intro and a link under the progress
+         bar. Reading both means the section round-trips rather than losing half
+         its copy the first time someone saves it. */
+      const introBlock = inner.match(/<div class="measure-2 strip-intro">([\s\S]*?)<\/div>/);
+      const paras = introBlock
+        ? [...introBlock[1].matchAll(/<p class="body">([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]))
+        : [];
+      const foot = inner.match(/<a href="([^"]+)" class="tlink">([\s\S]*?)<\/a>/);
+
       sections.push({
         type: 'collection',
         ground,
@@ -292,7 +301,10 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
-          lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          lead: paras[0] ?? first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          lead2: paras[1] ?? '',
+          ctaLabel: foot ? decode(foot[2]) : '',
+          ctaHref: foot ? localise(foot[1]) : '',
           source: match[1],
           presentation: match[2],
           limit: ''

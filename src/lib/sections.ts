@@ -154,6 +154,14 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         help: 'Bewerk de records zelf onder Inhoud; hier kies je alleen wat er getoond wordt.'
       },
       {
+        name: 'lead2',
+        label: 'Tweede alinea',
+        kind: 'textarea',
+        help: 'Alleen de horizontale strip gebruikt een tweede alinea.'
+      },
+      { name: 'ctaLabel', label: 'Linktekst onderaan', kind: 'text' },
+      { name: 'ctaHref', label: 'Link onderaan', kind: 'text', placeholder: '/over#fundamenten' },
+      {
         name: 'presentation',
         label: 'Weergave',
         kind: 'select',

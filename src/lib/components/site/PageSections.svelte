@@ -123,27 +123,70 @@
       </div>
     </section>
 
+  {:else if s.type === 'collection' && how(c) === 'strip'}
+    {@const items = collections[`${s.position}`] ?? []}
+    <!-- The strip is a direct child of the section, not of .wrap: it scrolls
+         full-bleed past the container, which is the point of the layout. Head,
+         two-paragraph intro and progress foot each get their own .wrap around
+         it, exactly as site/index.html does. -->
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+          <div>
+            {#if str(c, 'heading')}<h2 class="d-l">{str(c, 'heading')}</h2>{/if}
+          </div>
+          <div class="strip-nav">
+            <button class="strip-btn" type="button" data-strip-prev aria-label={nl ? 'Vorige' : 'Previous'}>←</button>
+            <button class="strip-btn" type="button" data-strip-next aria-label={nl ? 'Volgende' : 'Next'}>→</button>
+          </div>
+        </div>
+
+        {#if str(c, 'lead') || str(c, 'lead2')}
+          <div class="measure-2 strip-intro">
+            {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+            {#if str(c, 'lead2')}<p class="body">{str(c, 'lead2')}</p>{/if}
+          </div>
+        {/if}
+      </div>
+
+      <div class="strip fund-track" role="region" aria-label={str(c, 'heading')}>
+        {#each items as it (it.id)}
+          <article class="strip-card">
+            <div class="strip-img">
+              {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+              <span class="chip">[{it.number ?? ''}] {it.title}</span>
+            </div>
+            {#if it.bodyLong || it.body}<p class="body">{it.bodyLong || it.body}</p>{/if}
+          </article>
+        {/each}
+      </div>
+
+      <div class="wrap">
+        <div class="fund-foot">
+          <!-- main.js fills the bar and the counter through data-progress and
+               data-counter as the strip scrolls. -->
+          <div class="progress">
+            <div class="track"><span data-progress></span></div>
+            <span class="counter" data-counter>01 / {String(items.length).padStart(2, '0')}</span>
+          </div>
+          {#if str(c, 'ctaLabel') && str(c, 'ctaHref')}
+            <a href={str(c, 'ctaHref')} class="tlink">{str(c, 'ctaLabel')}</a>
+          {/if}
+        </div>
+      </div>
+    </section>
+
   {:else if s.type === 'collection'}
     {@const items = collections[`${s.position}`] ?? []}
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
       <div class="wrap">
         {#if str(c, 'running') || str(c, 'heading')}
           <div class="sec-head" data-reveal>
-            {#if how(c) === 'strip' && str(c, 'running')}
-              <span class="running">{str(c, 'running')}</span>
-            {/if}
             <div>
-              {#if how(c) !== 'strip' && str(c, 'running')}
-                <span class="running">{str(c, 'running')}</span>
-              {/if}
+              {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
               {#if str(c, 'heading')}<h2 class="d-l">{str(c, 'heading')}</h2>{/if}
             </div>
-            {#if how(c) === 'strip'}
-              <div class="strip-nav">
-                <button class="strip-btn" type="button" data-strip-prev aria-label="Vorige">←</button>
-                <button class="strip-btn" type="button" data-strip-next aria-label="Volgende">→</button>
-              </div>
-            {/if}
             {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
           </div>
         {/if}
@@ -224,24 +267,6 @@
                 <h4>{it.title}</h4>
                 {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
                 {#if it.body}<p class="r">{it.body}</p>{/if}
-              </article>
-            {/each}
-          </div>
-        {:else if how(c) === 'strip'}
-          <!-- The horizontal strip on the homepage. main.js drives the arrows
-               through data-strip-*, so reproducing the attributes is enough. -->
-          <!-- The static markup: a picture with the numbered chip over it, and
-               the Dutch body underneath. fund-track is what main.js scrolls. -->
-          <div class="strip fund-track" role="region" aria-label={str(c, 'heading')}>
-            {#each items as it (it.id)}
-              <article class="strip-card">
-                <div class="strip-img">
-                  {#if it.image}
-                    <img src={imageUrl(it.image)} alt={it.title} loading="lazy" />
-                  {/if}
-                  <span class="chip">[{it.number ?? ''}] {it.title}</span>
-                </div>
-                {#if it.bodyLong || it.body}<p class="body">{it.bodyLong || it.body}</p>{/if}
               </article>
             {/each}
           </div>
