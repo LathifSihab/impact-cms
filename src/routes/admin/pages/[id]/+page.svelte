@@ -11,6 +11,9 @@
   let busy = $state(false);
   let confirmingDelete = $state(false);
 
+  /* Newline-separated in the textarea, an array in the record. */
+  const heroTrustText = $derived(p.heroTrust.join(String.fromCharCode(10)));
+
   const HERO_VARIANTS = [
     { value: 'page', label: 'Standaard paginahero' },
     { value: 'home', label: 'Home (volledig scherm)' },
@@ -118,6 +121,37 @@
             <div class="field">
               <label for="hero_intro">Inleiding</label>
               <textarea id="hero_intro" name="hero_intro" rows="3">{p.heroIntro}</textarea>
+            </div>
+          </div>
+          <div class="full">
+            <div class="field">
+              <label for="hero_trust">Geruststellers</label>
+              <textarea id="hero_trust" name="hero_trust" rows="3">{heroTrustText}</textarea>
+              <span class="hint">Eén per regel. Verschijnt als rijtje onder de titel.</span>
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label for="hero_cta_label">Knop 1 — tekst</label>
+              <input id="hero_cta_label" name="hero_cta_label" type="text" value={p.heroCtaLabel} />
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label for="hero_cta_href">Knop 1 — link</label>
+              <input id="hero_cta_href" name="hero_cta_href" type="text" value={p.heroCtaHref} placeholder="/over" />
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label for="hero_cta2_label">Knop 2 — tekst</label>
+              <input id="hero_cta2_label" name="hero_cta2_label" type="text" value={p.heroCta2Label} />
+            </div>
+          </div>
+          <div>
+            <div class="field">
+              <label for="hero_cta2_href">Knop 2 — link</label>
+              <input id="hero_cta2_href" name="hero_cta2_href" type="text" value={p.heroCta2Href} placeholder="/events" />
             </div>
           </div>
           <div class="full">

@@ -117,6 +117,12 @@ export async function parseSections(
         continue;
       }
 
+      if (field.kind === 'consent') {
+        // Only the exact affirmative counts; anything else means no.
+        content[field.name] = content[field.name] === 'ja' ? 'ja' : '';
+        continue;
+      }
+
       // Simple fields already travelled inside the JSON payload.
       content[field.name] = String(content[field.name] ?? '');
     }
@@ -124,7 +130,7 @@ export async function parseSections(
     sections.push({
       position: sections.length,
       type: draft.type,
-      ground: (['white', 'sand', 'black'] as const).includes(draft.ground)
+      ground: (['white', 'sand', 'black', 'red'] as const).includes(draft.ground)
         ? draft.ground
         : 'white',
       anchor: String(draft.anchor ?? '').trim() || null,

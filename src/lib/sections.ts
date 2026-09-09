@@ -23,14 +23,16 @@ export type SectionType =
   | 'news_band'
   | 'downloads'
   | 'split_list'
-  | 'numbered_list';
+  | 'numbered_list'
+  | 'reel';
 
-export type Ground = 'white' | 'sand' | 'black';
+export type Ground = 'white' | 'sand' | 'black' | 'red';
 
 export const GROUNDS: { value: Ground; label: string }[] = [
   { value: 'white', label: 'Wit' },
   { value: 'sand', label: 'Zand' },
-  { value: 'black', label: 'Zwart' }
+  { value: 'black', label: 'Zwart' },
+  { value: 'red', label: 'Rood' }
 ];
 
 /** A field inside a section's `content` payload. */
@@ -38,6 +40,7 @@ export type SectionField =
   | { name: string; label: string; kind: 'text' | 'textarea' | 'markdown' | 'image' | 'url'; help?: string; placeholder?: string }
   | { name: string; label: string; kind: 'select'; options: { value: string; label: string }[]; help?: string }
   | { name: string; label: string; kind: 'tags'; help?: string }
+  | { name: string; label: string; kind: 'consent'; consequence: string; help?: string }
   | {
       name: string;
       label: string;
@@ -105,6 +108,13 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     summary: 'heading',
     fields: [
       running,
+      {
+        name: 'kicker',
+        label: 'Kicker',
+        kind: 'text',
+        placeholder: 'IMPACT for all',
+        help: 'Grote regel boven de titel. Alles na een | wordt rood.'
+      },
       heading,
       { name: 'intro', label: 'Inleiding', kind: 'textarea' },
       { name: 'body', label: 'Tekst', kind: 'textarea' },
@@ -120,7 +130,9 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         ]
       },
       { name: 'ctaLabel', label: 'Knoptekst', kind: 'text' },
-      { name: 'ctaHref', label: 'Knoplink', kind: 'text', placeholder: '/events' }
+      { name: 'ctaHref', label: 'Knoplink', kind: 'text', placeholder: '/events' },
+      { name: 'cta2Label', label: 'Tweede knoptekst', kind: 'text' },
+      { name: 'cta2Href', label: 'Tweede knoplink', kind: 'text' }
     ]
   },
 
@@ -149,6 +161,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { value: '', label: 'Standaard voor dit type' },
           { value: 'cards', label: 'Kaarten' },
           { value: 'fund_long', label: 'Fundamenten uitgebreid' },
+          { value: 'strip', label: 'Horizontale strip' },
           { value: 'age_cards', label: 'Leeftijdskaarten' },
           { value: 'expert_grid', label: 'Expertraster' },
           { value: 'format_rows', label: 'Formatrijen' },
@@ -273,6 +286,39 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  reel: {
+    type: 'reel',
+    label: 'Videoreel',
+    blurb:
+      'De scrollende clips van deelnemers. De clips tonen pas als de toestemming is aangevinkt.',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      { name: 'body', label: 'Tekst', kind: 'textarea' },
+      { name: 'word', label: 'Achtergrondwoord', kind: 'text', placeholder: 'ECHT' },
+      {
+        name: 'clips',
+        label: 'Clips',
+        kind: 'rows',
+        addLabel: 'Clip toevoegen',
+        columns: [
+          { name: 'webm', label: 'WebM-pad' },
+          { name: 'mp4', label: 'MP4-pad' },
+          { name: 'poster', label: 'Poster' },
+          { name: 'caption', label: 'Onderschrift', kind: 'textarea' }
+        ]
+      },
+      {
+        name: 'consentOnFile',
+        label: 'Schriftelijke toestemming van de ouders is op dossier',
+        kind: 'consent',
+        consequence:
+          'Deze clips tonen minderjarige deelnemers. Zonder dit vinkje toont de sectie alleen de tekst en geen enkele clip. Vink het pas aan als de toestemming per clip daadwerkelijk bewaard is — 01-BRIEF.md noteert dat ze op 9 september nog niet geleverd was.'
+      }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -292,7 +338,8 @@ export const SECTION_ORDER: SectionType[] = [
   'news_band',
   'downloads',
   'split_list',
-  'numbered_list'
+  'numbered_list',
+  'reel'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {
@@ -306,6 +353,8 @@ export function emptySectionContent(type: SectionType): Record<string, unknown> 
   for (const f of def.fields) {
     if (f.kind === 'rows' || f.kind === 'tags') out[f.name] = [];
     else if (f.kind === 'select') out[f.name] = f.options[0]?.value ?? '';
+    // Consent is never on by default, wherever it appears.
+    else if (f.kind === 'consent') out[f.name] = '';
     else out[f.name] = '';
   }
   return out;

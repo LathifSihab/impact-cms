@@ -37,6 +37,12 @@ export const actions: Actions = {
     const orphaned: string[] = [];
 
     const str = (k: string) => String(form.get(k) ?? '').trim();
+    /* The trust list is one item per line in the textarea. */
+    const lines = (k: string) =>
+      String(form.get(k) ?? '')
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
 
     let heroImage = str('hero_image');
     const heroFile = form.get('hero_image__file');
@@ -81,6 +87,11 @@ export const actions: Actions = {
           heroIntro: str('hero_intro'),
           heroImage: heroImage || null,
           heroVariant: str('hero_variant') || 'page',
+          heroTrust: lines('hero_trust'),
+          heroCtaLabel: str('hero_cta_label'),
+          heroCtaHref: str('hero_cta_href'),
+          heroCta2Label: str('hero_cta2_label'),
+          heroCta2Href: str('hero_cta2_href'),
           seo: { title: str('seo_title'), description: str('seo_description') },
           published: form.get('published') != null,
           isTemplate: form.get('is_template') != null,

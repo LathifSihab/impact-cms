@@ -130,17 +130,50 @@ interface Section {
 function extractHero(html: string) {
   const header = html.match(/<header class="hero[^"]*"[\s\S]*?<\/header>/);
   const block = header ? header[0] : '';
+
+  /* The homepage hero puts its standfirst in .hero-bottom rather than in a
+     .intro paragraph, and adds a trust list and two buttons. Reading both
+     shapes here means one hero record covers every page. */
+  const bottom = block.match(/<div class="hero-bottom[^"]*">([\s\S]*?)<\/div>\s*<\/div>/);
+  const trustBlock = block.match(/<ul class="trust[^"]*">([\s\S]*?)<\/ul>/);
+  const buttons = [...block.matchAll(/<a[^>]+href="([^"]+)"[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/g)];
+
   return {
     label: first(block, /<span class="label[^"]*">([\s\S]*?)<\/span>/),
     title: first(block, /<h1[^>]*>([\s\S]*?)<\/h1>/),
-    intro: first(block, /<p class="intro[^"]*">([\s\S]*?)<\/p>/),
-    image: (block.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? null
+    intro:
+      first(block, /<p class="intro[^"]*">([\s\S]*?)<\/p>/) ||
+      (bottom ? first(bottom[1], /<p>([\s\S]*?)<\/p>/) : ''),
+    image: (block.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? null,
+    trust: trustBlock
+      ? [...trustBlock[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map((li) => decode(li[1]))
+      : [],
+    ctaLabel: buttons[0] ? decode(buttons[0][2]) : '',
+    ctaHref: buttons[0] ? localise(buttons[0][1]) : '',
+    cta2Label: buttons[1] ? decode(buttons[1][2]) : '',
+    cta2Href: buttons[1] ? localise(buttons[1][1]) : ''
   };
+}
+
+/**
+ * `events.html#upcoming` -> `/events#upcoming`.
+ *
+ * Links lifted out of the static HTML point at .html files. The CMS serves
+ * those addresses now, so a hero button that kept the old href would walk the
+ * visitor off the page they are on.
+ */
+function localise(href: string): string {
+  if (/^(https?:|mailto:|tel:|#)/.test(href)) return href;
+  const [file, hash] = href.split('#');
+  const slug = file.replace(/\.html$/, '').replace(/^\//, '');
+  if (!slug || slug === 'index') return `/${hash ? '#' + hash : ''}`;
+  return `/${slug}${hash ? '#' + hash : ''}`;
 }
 
 function groundOf(openTag: string): string {
   if (openTag.includes('section--black')) return 'black';
   if (openTag.includes('section--sand')) return 'sand';
+  if (openTag.includes('section--red')) return 'red';
   return 'white';
 }
 
@@ -241,6 +274,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
        a copy of the words. */
     const asCollection: [string, string, string][] = [
       ['fund-long', 'foundations', 'fund_long'],
+      ['strip-nav', 'foundations', 'strip'],
       ['class="age"', 'age_groups', 'age_cards'],
       ['expert-grid', 'experts', 'expert_grid'],
       ['format-row', 'formats', 'format_rows']
@@ -258,6 +292,31 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           source: match[1],
           presentation: match[2],
           limit: ''
+        }
+      });
+      continue;
+    }
+
+    if (inner.includes('data-cinema') || inner.includes('reel-head')) {
+      const clips = [...inner.matchAll(/<figure class="shot"[\s\S]*?<\/figure>/g)].map((sh) => ({
+        webm: (sh[0].match(/src="([^"]+\.webm)"/) ?? [])[1] ?? '',
+        mp4: (sh[0].match(/src="([^"]+\.mp4)"/) ?? [])[1] ?? '',
+        poster: (sh[0].match(/poster="([^"]+)"/) ?? [])[1] ?? '',
+        caption: first(sh[0], /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/)
+      }));
+      sections.push({
+        type: 'reel',
+        ground,
+        anchor,
+        content: {
+          running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          body: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          word: first(inner, /<p class="reel-word"[^>]*>([\s\S]*?)<\/p>/),
+          clips,
+          // Never seeded on. The consent for these clips is not held, and the
+          // seed is not the place to assert that it is.
+          consentOnFile: ''
         }
       });
       continue;
@@ -307,6 +366,38 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         }
       });
       continue;
+    }
+
+    /* A two-column block with a big kicker line — "IMPACT for all" on the
+       homepage — is the same shape as a media_text without the picture. */
+    if (inner.includes('two-col') && !inner.includes('two-col--media')) {
+      const kickerRaw = inner.match(/<div class="d-m"[^>]*>([\s\S]*?)<\/div>/);
+      const heading = first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/);
+      if (kickerRaw && heading) {
+        const red = first(kickerRaw[1], /<span class="red">([\s\S]*?)<\/span>/);
+        const plain = decode(kickerRaw[1].replace(/<span class="red">[\s\S]*?<\/span>/, ''));
+        const btns = [...inner.matchAll(/<a[^>]+href="([^"]+)"[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/g)];
+        sections.push({
+          type: 'media_text',
+          ground,
+          anchor,
+          content: {
+            running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
+            kicker: red ? `${plain} | ${red}` : plain,
+            heading,
+            intro: '',
+            body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
+            ticks: [],
+            image: '',
+            imageSide: 'right',
+            ctaLabel: btns[0] ? decode(btns[0][2]) : '',
+            ctaHref: btns[0] ? localise(btns[0][1]) : '',
+            cta2Label: btns[1] ? decode(btns[1][2]) : '',
+            cta2Href: btns[1] ? localise(btns[1][1]) : ''
+          }
+        });
+        continue;
+      }
     }
 
     if (inner.includes('two-col--media')) {
@@ -425,14 +516,16 @@ function withHomeCollections(sections: Section[]): Section[] {
   const after: Record<string, { source: string; limit: string }> = {
     fundamenten: { source: 'foundations', limit: '' },
     events: { source: 'events', limit: '3' },
-    'journal-teaser': { source: 'journal', limit: '3' }
+    'journal-teaser': { source: 'journal', limit: '4' }
   };
 
   const out: Section[] = [];
   for (const section of sections) {
     out.push(section);
     const want = section.anchor ? after[section.anchor] : undefined;
-    if (!want) continue;
+    // The block may already have been lifted as a collection — the foundations
+    // strip is one — in which case adding another would render it twice.
+    if (!want || section.type === 'collection') continue;
     out.push({
       type: 'collection',
       ground: section.ground === 'sand' ? 'sand' : 'white',
@@ -520,6 +613,11 @@ for (const [i, page] of PAGES.entries()) {
       hero_title: hero.title,
       hero_intro: hero.intro,
       hero_image: await keepUploadedHero(page.id, locale, hero.image),
+      hero_trust: hero.trust,
+      hero_cta_label: hero.ctaLabel,
+      hero_cta_href: hero.ctaHref,
+      hero_cta2_label: hero.cta2Label,
+      hero_cta2_href: hero.cta2Href,
       hero_variant: page.heroVariant,
       seo,
       published: true
@@ -885,6 +983,11 @@ for (const lp of LIST_PAGES) {
       hero_title: lp.hero.title,
       hero_intro: lp.hero.intro,
       hero_image: await keepUploadedHero(lp.id, lp.locale, null),
+      hero_trust: [],
+      hero_cta_label: '',
+      hero_cta_href: '',
+      hero_cta2_label: '',
+      hero_cta2_href: '',
       hero_variant: 'page',
       seo: lp.seo,
       published: true,

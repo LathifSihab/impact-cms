@@ -337,6 +337,18 @@ reach the renderer.
 `published` is a draft flag, not a consent gate: unpublished pages stay editable
 and return 404 to visitors, enforced by RLS rather than by the route.
 
+### The participant reel
+
+The homepage reel shows four clips of minors. 01-BRIEF.md records that written
+parental consent per clip had not been provided, and says plainly: *do not
+design a feature that assumes they stay.* So the `reel` section carries its own
+consent tick, off by default and off in the seed. Without it the section renders
+its heading and no clip markup at all — not a hidden video, no `<video>` element
+on the page. Ticking it is a deliberate act by someone who holds the paperwork.
+
+The video files are not in this repo. Copy `site/assets/video` into
+`cms/static/assets/` locally; it is gitignored for the same reason.
+
 ### The nav follows what exists
 
 The shell links to a page when this app serves it and out to the static build

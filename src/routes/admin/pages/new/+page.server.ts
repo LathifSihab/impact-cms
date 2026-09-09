@@ -43,6 +43,11 @@ export const actions: Actions = {
           heroIntro: '',
           heroImage: null,
           heroVariant: 'page',
+          heroTrust: [],
+          heroCtaLabel: '',
+          heroCtaHref: '',
+          heroCta2Label: '',
+          heroCta2Href: '',
           seo: { title: '', description: '' },
           // New pages start hidden: an empty page should not appear on the site
           // the moment it is created.

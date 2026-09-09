@@ -22,8 +22,12 @@
     nl?: boolean;
   } = $props();
 
-  const groundClass = (g: string) =>
-    g === 'sand' ? 'section section--sand' : g === 'black' ? 'section section--black' : 'section';
+  const GROUND_CLASS: Record<string, string> = {
+    sand: 'section section--sand',
+    black: 'section section--black',
+    red: 'section section--red'
+  };
+  const groundClass = (g: string) => GROUND_CLASS[g] ?? 'section';
 
   const str = (c: Record<string, unknown>, k: string) => String(c[k] ?? '').trim();
   const list = (c: Record<string, unknown>, k: string) =>
@@ -77,13 +81,21 @@
 
   {:else if s.type === 'media_text'}
     {@const left = str(c, 'imageSide') === 'left'}
+    {@const hasImage = !!str(c, 'image')}
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
-      <div class="wrap two-col two-col--media">
+      <div class="wrap two-col" class:two-col--media={hasImage}>
         {#if left && str(c, 'image')}
           <img src={imageUrl(str(c, 'image'))} alt={str(c, 'heading')} style="width:100%;aspect-ratio:16/9;object-fit:cover" />
         {/if}
         <div>
           {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+          {#if str(c, 'kicker')}
+            {@const parts = str(c, 'kicker').split('|')}
+            <div class="d-m" style="margin:22px 0 26px">
+              {parts[0].trim()}
+              {#if parts[1]}<span class="red">{parts[1].trim()}</span>{/if}
+            </div>
+          {/if}
           {#if str(c, 'heading')}
             <h2 class="d-l" style="margin:22px 0 24px">{str(c, 'heading')}</h2>
           {/if}
@@ -94,10 +106,15 @@
             </ul>
           {/if}
           {#if str(c, 'body')}<p class="body" style="margin-top:24px">{str(c, 'body')}</p>{/if}
-          {#if str(c, 'ctaLabel') && str(c, 'ctaHref')}
-            <a href={str(c, 'ctaHref')} class="pill pill--primary" style="margin-top:26px">
-              {str(c, 'ctaLabel')}
-            </a>
+          {#if (str(c, 'ctaLabel') && str(c, 'ctaHref')) || (str(c, 'cta2Label') && str(c, 'cta2Href'))}
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:26px">
+              {#if str(c, 'ctaLabel') && str(c, 'ctaHref')}
+                <a href={str(c, 'ctaHref')} class="pill pill--primary">{str(c, 'ctaLabel')}</a>
+              {/if}
+              {#if str(c, 'cta2Label') && str(c, 'cta2Href')}
+                <a href={str(c, 'cta2Href')} class="pill pill--secondary">{str(c, 'cta2Label')}</a>
+              {/if}
+            </div>
           {/if}
         </div>
         {#if !left && str(c, 'image')}
@@ -112,10 +129,21 @@
       <div class="wrap">
         {#if str(c, 'running') || str(c, 'heading')}
           <div class="sec-head" data-reveal>
+            {#if how(c) === 'strip' && str(c, 'running')}
+              <span class="running">{str(c, 'running')}</span>
+            {/if}
             <div>
-              {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+              {#if how(c) !== 'strip' && str(c, 'running')}
+                <span class="running">{str(c, 'running')}</span>
+              {/if}
               {#if str(c, 'heading')}<h2 class="d-l">{str(c, 'heading')}</h2>{/if}
             </div>
+            {#if how(c) === 'strip'}
+              <div class="strip-nav">
+                <button class="strip-btn" type="button" data-strip-prev aria-label="Vorige">←</button>
+                <button class="strip-btn" type="button" data-strip-next aria-label="Volgende">→</button>
+              </div>
+            {/if}
             {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
           </div>
         {/if}
@@ -197,6 +225,18 @@
                 {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
                 {#if it.body}<p class="r">{it.body}</p>{/if}
               </article>
+            {/each}
+          </div>
+        {:else if how(c) === 'strip'}
+          <!-- The horizontal strip on the homepage. main.js drives the arrows
+               through data-strip-*, so reproducing the attributes is enough. -->
+          <div class="strip" data-strip>
+            {#each items as it (it.id)}
+              <div class="strip-card">
+                {#if it.number}<span class="n">{it.number}</span>{/if}
+                <h3>{it.title}</h3>
+                {#if it.body}<p class="body">{it.body}</p>{/if}
+              </div>
             {/each}
           </div>
         {:else if how(c) === 'fund_long'}
@@ -335,6 +375,44 @@
           {/each}
         </div>
       </div>
+    </section>
+
+  {:else if s.type === 'reel'}
+    {@const consented = str(c, 'consentOnFile') === 'ja'}
+    <section class="reel-sec" id={s.anchor || undefined}>
+      <div class="reel">
+        <div class="wrap">
+          <div class="reel-head" data-reveal>
+            {#if str(c, 'word')}
+              <p class="reel-word" aria-hidden="true">{str(c, 'word')}</p>
+            {/if}
+            {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+            {#if str(c, 'heading')}<h2 class="d-l">{str(c, 'heading')}</h2>{/if}
+            {#if str(c, 'body')}<p class="body">{str(c, 'body')}</p>{/if}
+          </div>
+        </div>
+      </div>
+
+      {#if consented && list(c, 'clips').length}
+        <!-- Rendered only against a recorded consent. These clips show
+             minors; 01-BRIEF.md is explicit that they come down if the
+             written permission never arrives. -->
+        <div class="cinema" data-cinema>
+          <div class="cinema-viewport">
+            <div class="cinema-track" data-cinema-track>
+              {#each list(c, 'clips') as clip (clip.mp4 || clip.webm)}
+                <figure class="shot" data-shot>
+                  <video controls preload="none" playsinline muted loop poster={clip.poster ? imageUrl(clip.poster) : undefined}>
+                    {#if clip.webm}<source src={imageUrl(clip.webm)} type="video/webm" />{/if}
+                    {#if clip.mp4}<source src={imageUrl(clip.mp4)} type="video/mp4" />{/if}
+                  </video>
+                  {#if clip.caption}<figcaption>{clip.caption}</figcaption>{/if}
+                </figure>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
     </section>
 
   {:else if s.type === 'news_band'}

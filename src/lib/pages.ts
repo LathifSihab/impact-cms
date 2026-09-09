@@ -29,6 +29,12 @@ export interface PageRecord {
   heroIntro: string;
   heroImage: string | null;
   heroVariant: string;
+  /** Reassurance items under the headline; the homepage uses these. */
+  heroTrust: string[];
+  heroCtaLabel: string;
+  heroCtaHref: string;
+  heroCta2Label: string;
+  heroCta2Href: string;
   seo: { title: string; description: string };
   published: boolean;
   /** Shared copy read by another route, not served at its own URL. */
@@ -45,6 +51,12 @@ export interface PageInput {
   heroIntro: string;
   heroImage: string | null;
   heroVariant: string;
+  /** Reassurance items under the headline; the homepage uses these. */
+  heroTrust: string[];
+  heroCtaLabel: string;
+  heroCtaHref: string;
+  heroCta2Label: string;
+  heroCta2Href: string;
   seo: { title: string; description: string };
   published: boolean;
   isTemplate: boolean;

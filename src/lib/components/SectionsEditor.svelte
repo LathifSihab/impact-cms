@@ -127,7 +127,29 @@
             <div class="field">
               <span class="lab">{f.label}</span>
 
-              {#if f.kind === 'textarea'}
+              {#if f.kind === 'consent'}
+                <!-- Same weight as the consent gate on experts and testimonials:
+                     it decides whether real people appear, so it is not styled
+                     like an ordinary checkbox. -->
+                <div class="gate" class:on={item.content[f.name] === 'ja'}>
+                  <div class="gate-head">
+                    <span class="label">
+                      {item.content[f.name] === 'ja' ? 'Toont clips' : 'Toont geen clips'}
+                    </span>
+                  </div>
+                  <div class="field--check">
+                    <input
+                      type="checkbox"
+                      id="{name}-{i}-{f.name}"
+                      checked={item.content[f.name] === 'ja'}
+                      onchange={(e) =>
+                        (item.content[f.name] = e.currentTarget.checked ? 'ja' : '')}
+                    />
+                    <label for="{name}-{i}-{f.name}">{f.label}</label>
+                  </div>
+                  <p class="why">{f.consequence}</p>
+                </div>
+              {:else if f.kind === 'textarea'}
                 <textarea rows="3" bind:value={item.content[f.name]}></textarea>
               {:else if f.kind === 'markdown'}
                 <textarea class="tall" bind:value={item.content[f.name]}></textarea>
