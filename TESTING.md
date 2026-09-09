@@ -722,6 +722,51 @@ op dossier** is ticked on the section — that is the consent gate, not a bug.
 GSAP and `cinema.js` load only on a page that actually has a `[data-cinema]`,
 so the other ten pages do not pay for them.
 
+## The page section types
+
+Eighteen types, in `src/lib/sections.ts`. Add one of each on a scratch page in
+`/admin/pages` and check it renders the site's markup, not a generic block.
+
+The ordinary ones — `sec_head`, `rich_text`, `media_text`, `collection`,
+`cta_cards`, `band`, `news_band`, `downloads`, `split_list` — are covered by the
+page walkthroughs above. These are the ones added later, each because a specific
+block needed markup nothing else produced:
+
+- [ ] **`founders`** (Over) — two long portraits, the second mirrored
+      (`.founder--flip`), each with a `blockquote.quote`, then the shared `.duo`
+      block underneath.
+- [ ] **`team`** (Over) — `.team-cards` for the core team, then `.expert-grid`
+      read from Inhoud → Experts. Each expert card ends with the foundations it
+      carries, as `[01] Self-knowledge`, not as a raw number.
+- [ ] **`form`** (Contact, Hosted) — labelled fields, an error span each, and a
+      privacy line. Contact also shows the contact rows and shortcuts *beside*
+      the form, in the same section.
+- [ ] **`cine`** (Media) — full-bleed video with the glass caption over it and a
+      sound toggle. It sits outside `.wrap` and outside any `<section>`.
+- [ ] **`mosaic`** (Media) — a grid of buttons, not figures. Tab to one and press
+      Enter: the lightbox opens.
+- [ ] **`legal`** (Privacy) — headed blocks down the left, summary card right.
+      Clearing the "waarschuwing bovenaan" field removes the draft banner.
+- [ ] **`metabar`** (Hosted) — the spec bar sits tight under the hero with no
+      section padding above it.
+- [ ] **`numbered_list`** has six shapes. Switch the style field between routes,
+      layers, steps, options, format rows and contribution rows and check each
+      one changes shape. Steps and options also take three or four across.
+
+### The two that render nothing
+
+- [ ] **`reel`** (Home) and **`vcards`** (Media) show the heading and the text
+      and **no clips at all** until the consent tick is set. Untick it and the
+      clips disappear again.
+
+This is the feature, not a bug. 01-BRIEF records that written parental consent
+for those clips was not held; the same applies to `confirmed` on experts and
+figures, which is why the expert grid and both stats blocks are empty on a fresh
+seed.
+
+- [ ] Tick `confirmed` on a figure in Inhoud → Cijfers. It appears on Social
+      Impact or Samenwerken depending on its group. Untick it: gone.
+
 ## Storage backend
 
 Uploads go to a Supabase Storage bucket when `PUBLIC_SUPABASE_STORAGE_BUCKET`

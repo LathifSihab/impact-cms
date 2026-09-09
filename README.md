@@ -405,16 +405,48 @@ pages          id (slug), locale, nav_label, sort_order, hero_label,
                hero_title, hero_intro, hero_image, hero_variant, seo,
                published
 
-page_sections  page_id, position, type, ground, anchor, content jsonb
-               -- type: sec_head | rich_text | media_text | collection
-               --     | cta_cards | band | news_band
+page_sections  page_id, locale, position, type, ground, anchor, content jsonb
 ```
 
 **The section types are typed, not generic blocks.** Each maps onto markup the
-stylesheet already has — `.sec-head`, `.two-col--media`, `.cta-cards`, `.band`,
-`.news-band` — so a page assembled in the backoffice renders as the site rather
-than as a page builder's idea of one. `src/lib/sections.ts` describes them once
-and both the editor and the renderer read that description.
+stylesheet already has, so a page assembled in the backoffice renders as the
+site rather than as a page builder's idea of one. `src/lib/sections.ts`
+describes them once and both the editor and the renderer read that description.
+
+There are eighteen. The first seven are the ordinary furniture; the rest exist
+because a specific block on a specific page needed markup that nothing else
+produces, and lifting it as prose would have lost it.
+
+| Type | Renders | Where it came from |
+|---|---|---|
+| `sec_head` | `.sec-head` — running label, title, lead, optional right-hand link | Everywhere |
+| `rich_text` | A prose block. The fallback when nothing else fits | Privacy, odd corners |
+| `media_text` | `.two-col`, with or without `--media`. Optionally a callout box, contact rows and a boilerplate quote | Most pages |
+| `collection` | Records from Inhoud, in one of twelve presentations | Everywhere |
+| `cta_cards` | `.cta-cards` | Page ends |
+| `band` | `.band` | Page ends |
+| `news_band` | The newsletter form, narrow or two-column | Every page |
+| `downloads` | `.dl-list` | Media, Contact |
+| `split_list` | `.split-list` | Hosted Experiences |
+| `numbered_list` | Six shapes: routes, layers, steps, options, format rows, contribution rows | Home, Over, Samenwerken, Social Impact, Hosted |
+| `reel` | The pinned scroll cinema. **Consent-gated** | Home |
+| `founders` | Two long portraits with quotes, plus the shared closing note | Over |
+| `team` | Core-team cards, then the expert grid from Inhoud | Over |
+| `form` | The contact and request forms, with the fields as rows | Contact, Hosted |
+| `cine` | The full-bleed showcase video with its glass caption | Media |
+| `vcards` | A grid of participant clips. **Consent-gated** | Media |
+| `mosaic` | The photo archive lightbox.js opens | Media |
+| `legal` | Headed blocks with a summary card beside them | Privacy |
+| `metabar` | The spec bar under the hero | Hosted, event template |
+
+Two of them render **nothing** without a tick: `reel` and `vcards` show
+minors, and 01-BRIEF records the written parental consent as not held. The
+section shows its heading and text and no clips at all. That is the feature.
+
+Three render outside a `<section>` on purpose — the partner marquee, `cine` and
+`metabar` — because each carries its own background or borders and a section's
+padding would push it away from what it belongs to. `.section` is where the
+page's vertical rhythm lives, so a wrapper is never neutral.
 
 **The per-format sections on /events are a `collection` slot.** `#days`,
 `#camps`, `#retreats` and `#community` are the format records rendered as detail
@@ -501,86 +533,30 @@ which were the last two blocks a person could not edit.
 
 ## Deploying
 
-Target is Vercel, as 06-CMS-SCOPE decides. The one thing that has to be right
-before the first deploy is storage.
+**[DEPLOYMENT.md](DEPLOYMENT.md)** is the step-by-step: Supabase project,
+migrations, auth, the storage bucket, seeding, the Vercel project, every
+environment variable and what breaks without it, and what to verify afterwards.
 
-### Uploads cannot live on disk
+The one thing to know before reading it: **uploads cannot live on the Vercel
+filesystem.** It is read-only and ephemeral, so an uploaded image is gone on the
+next invocation and every photo 404s within minutes. Uploads go to a Supabase
+Storage bucket instead — already in the stack, no new vendor.
 
-Vercel's filesystem is read-only and ephemeral: a file written by an upload is
-gone on the next invocation, so every image 404s within minutes. Uploads
-therefore go to a Supabase Storage bucket — already in the stack, no new vendor,
-same project and keys.
+`src/lib/server/storage.ts` holds both backends behind one interface, chosen by
+whether `PUBLIC_SUPABASE_STORAGE_BUCKET` is set. The default is Supabase
+whenever it is, **including locally**: a dev environment that exercises a
+different storage path from production cannot catch storage bugs, and this one
+was caught exactly that way.
 
-`src/lib/server/storage.ts` holds both backends behind one interface. Which one
-runs is decided by whether a bucket is named:
-
-```
-PUBLIC_SUPABASE_STORAGE_BUCKET=uploads   # Supabase Storage
-PUBLIC_SUPABASE_STORAGE_BUCKET=          # a folder on disk
-```
-
-**The default is Supabase whenever a bucket is set, including locally.** That is
-deliberate: a dev environment that exercises a different storage path from
-production is one that cannot catch storage bugs — and this one was caught
-exactly that way, when the dev server wrote to disk while the pages read from
-the bucket.
-
-The bucket is **public**. These are the images on the public site; a signed URL
-per image would mean a round trip through our own server for every photo, which
-is the cost moving off disk is meant to remove. Writes still need the
-service-role key, which the browser never sees.
-
-**The stored path does not change.** Columns keep `/uploads/<table>/<id>/<file>`
-whichever backend is in use; `imageUrl()` maps it to the bucket's CDN URL at
-render time. Switching backends is a config change, not a content migration.
-
-### First deploy
+The stored path does not change either way — columns keep
+`/uploads/<table>/<id>/<file>` and `imageUrl()` maps it at render time — so
+switching backends is a config change, not a content migration.
 
 ```bash
-# 1. move what is already on disk into the bucket (idempotent, safe to repeat)
-npm run storage:push
-npm run storage:push -- --dry-run      # to look first
-npm run storage:push -- --prune        # also delete objects with no local file
-
-# 2. link the project and set the variables
-vercel link
-vercel env add PUBLIC_SUPABASE_URL production
-vercel env add PUBLIC_SUPABASE_ANON_KEY production
-vercel env add SUPABASE_SERVICE_ROLE_KEY production
-vercel env add PUBLIC_SUPABASE_STORAGE_BUCKET production
-vercel env add BREVO_API_KEY production
-vercel env add TICKET_TAILOR_API_KEY production
-vercel env add PUBLIC_SITE_URL production
-vercel env add PUBLIC_STATIC_SITE_BASE production
-
-# 3. ship
-vercel deploy --prod
+npm run storage:push          # move the local uploads folder into the bucket
+ADAPTER=node npm run build    # check a production build on Windows, where the
+                              # Vercel adapter cannot symlink
 ```
-
-`vercel.json` pins the framework and adds `X-Robots-Tag: noindex` on `/admin`
-and `/login`, so the backoffice cannot be indexed even if a link leaks.
-
-**A value set in Vercel's UI reaches the running app only at deploy time.**
-07-DECISIONS records this project being bitten by it twice — Brevo returned 401
-against a key that was already correct in the dashboard. Changing a variable and
-refreshing changes nothing; redeploy.
-
-### Building on Windows
-
-`npm run build` fails locally on Windows with `EPERM: operation not permitted,
-symlink`. The Vercel adapter symlinks its route functions, and Windows refuses
-that without Developer Mode. It is not a code problem — the same build succeeds
-on Linux, which is what Vercel runs. To check a production build locally:
-
-```bash
-ADAPTER=node npm run build      # a plain Node server, no symlinks
-```
-
-### After a deploy, check
-
-- An image loads, and its URL is the bucket's, not `/uploads/...`.
-- Upload a new image in the backoffice, save, and reload the public page.
-- `/admin` redirects to `/login` when signed out.
 
 ## Not done
 
