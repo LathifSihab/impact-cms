@@ -55,7 +55,7 @@ const SOURCES: Record<
 > = {
   foundations: {
     table: 'foundations',
-    select: 'id,number,name,en_one_liner,nl_body,image',
+    select: 'id,number,name,en_one_liner,nl_body,work_on,image,alt',
     order: 'number',
     asc: true,
     map: (r) => ({
@@ -64,7 +64,9 @@ const SOURCES: Record<
       title: r.name,
       body: r.en_one_liner,
       bodyLong: r.nl_body,
-      image: r.image
+      image: r.image,
+      alt: r.alt,
+      tags: Array.isArray(r.work_on) ? r.work_on.map(String) : []
     })
   },
   formats: {
@@ -183,9 +185,13 @@ export async function resolveCollections(
   db: SupabaseClient,
   sections: PageSection[]
 ): Promise<Record<string, CollectionItem[]>> {
+  /* Any section that names a source, not only the `collection` type. The team
+     block on Over is its own shape — founder cards, two headings, a lead — but
+     the expert grid inside it is the same experts table, and it should not need
+     a second way of reading it. */
   const wanted = sections
     .map((s, index) => ({ s, index }))
-    .filter(({ s }) => s.type === 'collection');
+    .filter(({ s }) => String(s.content?.source ?? '').trim() !== '');
 
   const entries = await Promise.all(
     wanted.map(async ({ s }) => {

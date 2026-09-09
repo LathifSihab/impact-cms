@@ -38,6 +38,26 @@ export const actions: Actions = {
 
     const str = (k: string) => String(form.get(k) ?? '').trim();
     /* The trust list is one item per line in the textarea. */
+    /* Row editors post their state as JSON under <name>__rows, the same shape
+       the section editor uses. */
+    const rows = <C extends string>(k: string, cols: readonly C[]): Record<C, string>[] => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(String(form.get(`${k}__rows`) ?? '[]'));
+      } catch {
+        parsed = [];
+      }
+      if (!Array.isArray(parsed)) return [];
+      return parsed
+        .map((r) => {
+          const src = (r ?? {}) as Record<string, unknown>;
+          const out = {} as Record<C, string>;
+          for (const col of cols) out[col] = String(src[col] ?? '').trim();
+          return out;
+        })
+        .filter((r) => Object.values(r).some(Boolean));
+    };
+
     const lines = (k: string) =>
       String(form.get(k) ?? '')
         .split(/\r?\n/)
@@ -103,6 +123,8 @@ export const actions: Actions = {
           heroVideoMp4,
           heroVariant: str('hero_variant') || 'page',
           heroTrust: lines('hero_trust'),
+          heroAnchorNav: rows('hero_anchor_nav', ['label', 'href'] as const),
+          heroOverlayMeta: rows('hero_overlay_meta', ['heading', 'body'] as const),
           heroCtaLabel: str('hero_cta_label'),
           heroCtaHref: str('hero_cta_href'),
           heroCta2Label: str('hero_cta2_label'),

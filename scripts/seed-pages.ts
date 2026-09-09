@@ -141,6 +141,13 @@ function extractHero(html: string) {
   const bottom = block.match(/<div class="hero-bottom[^"]*">([\s\S]*?)<\/div>\s*<\/div>/);
   const trustBlock = block.match(/<ul class="trust[^"]*">([\s\S]*?)<\/ul>/);
   const buttons = [...block.matchAll(/<a[^>]+href="([^"]+)"[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/g)];
+  const anchorBlock = block.match(/<nav class="anchor-nav[^"]*"[^>]*>([\s\S]*?)<\/nav>/);
+  /* Take everything from .overlay-meta to the end of the hero and pull the
+     items out of it. Trying to close the div with a regex stopped at the first
+     nested </div> and lost the third block. */
+  const overlayStart = block.indexOf('class="overlay-meta');
+  const overlayBlock: [string, string] | null =
+    overlayStart === -1 ? null : ['', block.slice(overlayStart)];
 
   return {
     label: first(block, /<span class="label[^"]*">([\s\S]*?)<\/span>/),
@@ -155,7 +162,21 @@ function extractHero(html: string) {
     ctaLabel: buttons[0] ? decode(buttons[0][2]) : '',
     ctaHref: buttons[0] ? localise(buttons[0][1]) : '',
     cta2Label: buttons[1] ? decode(buttons[1][2]) : '',
-    cta2Href: buttons[1] ? localise(buttons[1][1]) : ''
+    cta2Href: buttons[1] ? localise(buttons[1][1]) : '',
+    /* The in-page jump links, and the blocks laid over the image. Four pages
+       carry the nav; only Over carries the meta. */
+    anchorNav: anchorBlock
+      ? [...anchorBlock[1].matchAll(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map((a) => ({
+          href: localise(a[1]),
+          label: decode(a[2])
+        }))
+      : [],
+    overlayMeta: overlayBlock
+      ? [...overlayBlock[1].matchAll(/<div class="item">([\s\S]*?)<\/div>/g)].map((it) => ({
+          heading: first(it[1], /<h3>([\s\S]*?)<\/h3>/),
+          body: first(it[1], /<p>([\s\S]*?)<\/p>/)
+        }))
+      : []
   };
 }
 
@@ -293,7 +314,12 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       ['expert-grid', 'experts', 'expert_grid'],
       ['format-row', 'formats', 'format_rows']
     ];
-    const match = asCollection.find(([needle]) => inner.includes(needle));
+    /* The team block also holds an expert-grid, but it is more than one: it
+       carries the core-team cards and two headings around the grid. It has its
+       own type, so it must not be swallowed here as a plain collection. */
+    const match = inner.includes('class="team-cards"')
+      ? undefined
+      : asCollection.find(([needle]) => inner.includes(needle));
     if (match) {
       /* The strip carries a two-paragraph intro and a link under the progress
          bar. Reading both means the section round-trips rather than losing half
@@ -412,9 +438,14 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     if (inner.includes('two-col') && !inner.includes('two-col--media')) {
       const kickerRaw = inner.match(/<div class="d-m"[^>]*>([\s\S]*?)<\/div>/);
       const heading = first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/);
-      if (kickerRaw && heading) {
-        const red = first(kickerRaw[1], /<span class="red">([\s\S]*?)<\/span>/);
-        const plain = decode(kickerRaw[1].replace(/<span class="red">[\s\S]*?<\/span>/, ''));
+      /* The kicker is optional. Requiring it sent every plain two-column
+         block — "Why we exist" on Over, and its picture — down to the prose
+         fallback, which is why those pages read as flat text. */
+      if (heading) {
+        const red = kickerRaw ? first(kickerRaw[1], /<span class="red">([\s\S]*?)<\/span>/) : '';
+        const plain = kickerRaw
+          ? decode(kickerRaw[1].replace(/<span class="red">[\s\S]*?<\/span>/, ''))
+          : '';
         const btns = [...inner.matchAll(/<a[^>]+href="([^"]+)"[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/g)];
         sections.push({
           type: 'media_text',
@@ -425,7 +456,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
             kicker: red ? `${plain} | ${red}` : plain,
             heading,
             headingStyle: headingStyleOf(inner),
-            intro: '',
+            intro: first(inner, /<p class="intro"[^>]*>([\s\S]*?)<\/p>/),
             body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
             ticks: [],
             /* A plain two-col still often carries a picture in its other
@@ -466,6 +497,98 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           imageSide: imageFirst ? 'left' : 'right',
           ctaLabel: first(inner, /<a href="[^"]*" class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/),
           ctaHref: (inner.match(/<a href="([^"]+)" class="pill/) ?? [])[1] ?? ''
+        }
+      });
+      continue;
+    }
+
+    /* The founders block: two long portraits with a citation each, then the
+       shared closing note. */
+    if (inner.includes('class="founder"')) {
+      const people = [...inner.matchAll(/<div class="founder[^"]*">([\s\S]*?)(?=<div class="founder|<div class="duo)/g)].map(
+        (b) => {
+          const f = b[1];
+          const bodies = [...f.matchAll(/<p class="body"[^>]*>([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]));
+          const quote = f.match(/<blockquote class="quote">([\s\S]*?)(?:<cite>([\s\S]*?)<\/cite>)?\s*<\/blockquote>/);
+          return {
+            image: (f.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+            tag: first(f, /<span class="tag">([\s\S]*?)<\/span>/),
+            name: first(f, /<h3[^>]*>([\s\S]*?)<\/h3>/),
+            role: first(f, /<p class="meta"[^>]*>([\s\S]*?)<\/p>/),
+            intro: first(f, /<p class="intro"[^>]*>([\s\S]*?)<\/p>/),
+            body: bodies[0] ?? '',
+            body2: bodies[1] ?? '',
+            quote: quote ? decode(quote[1].replace(/<cite>[\s\S]*?<\/cite>/, '')) : '',
+            cite: quote && quote[2] ? decode(quote[2]) : ''
+          };
+        }
+      );
+
+      const duoBlock = inner.match(/<div class="duo">([\s\S]*?)<\/div>\s*<\/div>/);
+      const duo = duoBlock ? duoBlock[1] : '';
+      const duoBodies = [...duo.matchAll(/<p class="body"[^>]*>([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]));
+      const duoLink = duo.match(/<a href="([^"]+)" class="tlink">([\s\S]*?)<\/a>/);
+      const headBlock = inner.match(/<div class="sec-head"[\s\S]*?<\/div>\s*<\/div>/);
+      const head = headBlock ? headBlock[0] : inner;
+
+      sections.push({
+        type: 'founders',
+        ground,
+        anchor,
+        content: {
+          running: first(head, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(head, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(head),
+          names: first(inner, /<p class="founder-names">([\s\S]*?)<\/p>/).replace(/\s+/g, ' '),
+          lead: first(head, /<p class="body">([\s\S]*?)<\/p>/),
+          people,
+          duoImage: (duo.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+          duoRunning: first(duo, /<span class="running">([\s\S]*?)<\/span>/),
+          duoHeading: first(duo, /<h3[^>]*>([\s\S]*?)<\/h3>/),
+          duoBody: duoBodies[0] ?? '',
+          duoBody2: duoBodies[1] ?? '',
+          duoLinkLabel: duoLink ? decode(duoLink[2]) : '',
+          duoLinkHref: duoLink ? localise(duoLink[1]) : ''
+        }
+      });
+      continue;
+    }
+
+    /* Team & experts: the core-team cards, then the expert grid. The grid is
+       left as a source rather than typed-out rows, so the confirmed gate keeps
+       deciding who appears. */
+    if (inner.includes('class="team-cards"')) {
+      const cards = [...inner.matchAll(/<a class="team-card"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)].map(
+        (b) => ({
+          href: localise(b[1]),
+          image: (b[2].match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+          tag: first(b[2], /<span class="tag">([\s\S]*?)<\/span>/),
+          name: first(b[2], /<h4>([\s\S]*?)<\/h4>/),
+          role: first(b[2], /<p class="r">([\s\S]*?)<\/p>/),
+          body: first(b[2], /<p class="body">([\s\S]*?)<\/p>/),
+          linkLabel: first(b[2], /<span class="tlink">([\s\S]*?)<\/span>/)
+        })
+      );
+      const headings = [...inner.matchAll(/<h3 class="h"[^>]*>([\s\S]*?)<\/h3>/g)].map((x) => decode(x[1]));
+      const afterCards = inner.slice(inner.indexOf('</div>', inner.indexOf('team-cards')));
+      const headBlock = inner.match(/<div class="sec-head"[\s\S]*?<\/div>\s*<\/div>/);
+      const head = headBlock ? headBlock[0] : inner;
+
+      sections.push({
+        type: 'team',
+        ground,
+        anchor,
+        content: {
+          running: first(head, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(head, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(head),
+          lead: first(head, /<p class="body">([\s\S]*?)<\/p>/),
+          cardsHeading: headings[0] ?? '',
+          cards,
+          cardsNote: first(afterCards, /<p class="meta"[^>]*>([\s\S]*?)<\/p>/),
+          gridHeading: headings[1] ?? '',
+          gridLead: first(afterCards, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
+          source: inner.includes('expert-grid') ? 'experts' : ''
         }
       });
       continue;
@@ -747,7 +870,14 @@ for (const [i, page] of PAGES.entries()) {
   }
 
   const html = readFileSync(file, 'utf8');
-  const main = (html.match(/<main[^>]*>([\s\S]*?)<\/main>/) ?? [, html])[1] ?? html;
+  /* Sections are lifted from <main> AND from whatever sits between </main> and
+     the footer. The newsletter band is outside <main> on six of these pages,
+     and the partner marquee on the homepage is outside it too — reading only
+     <main> silently dropped both. */
+  const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/);
+  const main = mainMatch
+    ? mainMatch[1] + html.slice(mainMatch.index! + mainMatch[0].length).split('<footer')[0]
+    : html;
   const hero = extractHero(html);
   const extracted = extractSections(main);
   const lifted = page.id === 'home' ? withHomeCollections(extracted.sections) : extracted.sections;
@@ -770,6 +900,8 @@ for (const [i, page] of PAGES.entries()) {
       hero_intro: hero.intro,
       hero_image: await keepUploadedHero(page.id, locale, hero.image),
       hero_trust: hero.trust,
+      hero_anchor_nav: hero.anchorNav,
+      hero_overlay_meta: hero.overlayMeta,
       hero_cta_label: hero.ctaLabel,
       hero_cta_href: hero.ctaHref,
       hero_cta2_label: hero.cta2Label,

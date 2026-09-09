@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import ImageInput from '$lib/components/ImageInput.svelte';
+  import RowsEditor from '$lib/components/RowsEditor.svelte';
   import SectionsEditor from '$lib/components/SectionsEditor.svelte';
   import type { ActionData, PageData } from './$types';
 
@@ -152,6 +153,36 @@
             <div class="field">
               <label for="hero_cta2_href">Knop 2 — link</label>
               <input id="hero_cta2_href" name="hero_cta2_href" type="text" value={p.heroCta2Href} placeholder="/events" />
+            </div>
+          </div>
+          <div class="full">
+            <div class="field">
+              <span class="lab">Ankernavigatie in de hero</span>
+              <p class="hint">In-page links naar de secties eronder — Over, Events, Media en Samenwerken gebruiken die.</p>
+              <RowsEditor
+                name="hero_anchor_nav"
+                initial={p.heroAnchorNav ?? []}
+                addLabel="Link toevoegen"
+                columns={[
+                  { name: 'label', label: 'Tekst' },
+                  { name: 'href', label: 'Link' }
+                ]}
+              />
+            </div>
+          </div>
+          <div class="full">
+            <div class="field">
+              <span class="lab">Blokken over het beeld</span>
+              <p class="hint">Alleen de overlappende hero gebruikt deze.</p>
+              <RowsEditor
+                name="hero_overlay_meta"
+                initial={p.heroOverlayMeta ?? []}
+                addLabel="Blok toevoegen"
+                columns={[
+                  { name: 'heading', label: 'Kop' },
+                  { name: 'body', label: 'Tekst', kind: 'textarea' }
+                ]}
+              />
             </div>
           </div>
           <div class="full">

@@ -34,6 +34,10 @@ export interface PageRecord {
   heroVariant: string;
   /** Reassurance items under the headline; the homepage uses these. */
   heroTrust: string[];
+  /** In-page jump links inside the hero — Over, Events, Media, Samenwerken. */
+  heroAnchorNav: { label: string; href: string }[];
+  /** The three age blocks laid over the Over hero. */
+  heroOverlayMeta: { heading: string; body: string }[];
   heroCtaLabel: string;
   heroCtaHref: string;
   heroCta2Label: string;
@@ -59,6 +63,10 @@ export interface PageInput {
   heroVariant: string;
   /** Reassurance items under the headline; the homepage uses these. */
   heroTrust: string[];
+  /** In-page jump links inside the hero — Over, Events, Media, Samenwerken. */
+  heroAnchorNav: { label: string; href: string }[];
+  /** The three age blocks laid over the Over hero. */
+  heroOverlayMeta: { heading: string; body: string }[];
   heroCtaLabel: string;
   heroCtaHref: string;
   heroCta2Label: string;

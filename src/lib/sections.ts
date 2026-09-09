@@ -24,7 +24,9 @@ export type SectionType =
   | 'downloads'
   | 'split_list'
   | 'numbered_list'
-  | 'reel';
+  | 'reel'
+  | 'founders'
+  | 'team';
 
 export type Ground = 'white' | 'sand' | 'black' | 'red';
 
@@ -401,6 +403,91 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  /* The founders block on Over. Two long portraits and a shared closing note —
+     bespoke enough that folding it into media_text would mean a media_text with
+     six fields nothing else uses. */
+  founders: {
+    type: 'founders',
+    label: 'Founders',
+    blurb: 'De twee uitgebreide founderportretten, met citaat, en het gezamenlijke slotblok.',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      { name: 'names', label: 'Namen onder de titel', kind: 'text', placeholder: 'Mirte Rens & Jean-Marc Mwema' },
+      lead,
+      {
+        name: 'people',
+        label: 'Founders',
+        kind: 'rows',
+        addLabel: 'Founder toevoegen',
+        columns: [
+          { name: 'image', label: 'Portret', kind: 'image' },
+          { name: 'tag', label: 'Label' },
+          { name: 'name', label: 'Naam' },
+          { name: 'role', label: 'Rol' },
+          { name: 'intro', label: 'Intro', kind: 'textarea' },
+          { name: 'body', label: 'Tekst', kind: 'textarea' },
+          { name: 'body2', label: 'Tekst (vervolg)', kind: 'textarea' },
+          { name: 'quote', label: 'Citaat', kind: 'textarea' },
+          { name: 'cite', label: 'Van wie', kind: 'text' }
+        ]
+      },
+      { name: 'duoImage', label: 'Slotblok — beeld', kind: 'image' },
+      { name: 'duoRunning', label: 'Slotblok — bovenschrift', kind: 'text' },
+      { name: 'duoHeading', label: 'Slotblok — titel', kind: 'text' },
+      { name: 'duoBody', label: 'Slotblok — tekst', kind: 'textarea' },
+      { name: 'duoBody2', label: 'Slotblok — tekst (vervolg)', kind: 'textarea' },
+      { name: 'duoLinkLabel', label: 'Slotblok — linktekst', kind: 'text' },
+      { name: 'duoLinkHref', label: 'Slotblok — link', kind: 'text' }
+    ]
+  },
+
+  /* Team & experts on Over: the founder cards, then the expert grid read from
+     the experts table. The grid is a source rather than typed-out rows so the
+     confirmed gate keeps applying to it. */
+  team: {
+    type: 'team',
+    label: 'Team & experts',
+    blurb: 'Kernteamkaarten plus het expertraster uit Inhoud → Experts.',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      lead,
+      { name: 'cardsHeading', label: 'Kop boven de kaarten', kind: 'text' },
+      {
+        name: 'cards',
+        label: 'Kernteamkaarten',
+        kind: 'rows',
+        addLabel: 'Kaart toevoegen',
+        columns: [
+          { name: 'image', label: 'Portret', kind: 'image' },
+          { name: 'tag', label: 'Label' },
+          { name: 'name', label: 'Naam' },
+          { name: 'role', label: 'Rol' },
+          { name: 'body', label: 'Tekst', kind: 'textarea' },
+          { name: 'linkLabel', label: 'Linktekst' },
+          { name: 'href', label: 'Link' }
+        ]
+      },
+      { name: 'cardsNote', label: 'Notitie onder de kaarten', kind: 'text' },
+      { name: 'gridHeading', label: 'Kop boven het raster', kind: 'text' },
+      { name: 'gridLead', label: 'Inleiding boven het raster', kind: 'textarea' },
+      {
+        name: 'source',
+        label: 'Raster uit',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Geen raster' },
+          { value: 'experts', label: 'Experts' }
+        ]
+      }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -436,7 +523,9 @@ export const SECTION_ORDER: SectionType[] = [
   'downloads',
   'split_list',
   'numbered_list',
-  'reel'
+  'reel',
+  'founders',
+  'team'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {

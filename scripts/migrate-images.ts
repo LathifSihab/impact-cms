@@ -203,16 +203,43 @@ for (const key of NAV_ORDER) {
     console.error(`  page_sections: ${secErr.message}`);
   } else {
     for (const row of (sections ?? []) as Record<string, any>[]) {
-      const content = (row.content ?? {}) as Record<string, unknown>;
-      const stored = String(content.image ?? '');
-      if (!stored) continue;
-
       const key = `${row.page_id}-${row.locale}`;
-      const next = await migrateValue('pages', key, `section-${row.position}-image`, stored);
-      if (next && !dryRun) {
+
+      /* Walk the whole content object, not just `content.image`. A section can
+         hold images anywhere — the founder portraits are in `people[].image`,
+         the team cards in `cards[].image`, the reel posters in `clips[].poster`
+         — and reading only the top level left every one of them on a legacy
+         path that renders nothing. */
+      let n = 0;
+      const walk = async (value: unknown, path: string): Promise<unknown> => {
+        if (typeof value === 'string') {
+          if (!value || value.startsWith('/uploads/')) return value;
+          if (!/\.(jpe?g|png|webp|avif|gif)$/i.test(value)) return value;
+          const field = `section-${row.position}-${path || 'image'}`.replace(/[^a-z0-9-]+/gi, '-');
+          const next = await migrateValue('pages', key, field, value);
+          if (next) n++;
+          return next ?? value;
+        }
+        if (Array.isArray(value)) {
+          const out = [];
+          for (let i = 0; i < value.length; i++) out.push(await walk(value[i], `${path}-${i}`));
+          return out;
+        }
+        if (value && typeof value === 'object') {
+          const out: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+            out[k] = await walk(v, path ? `${path}-${k}` : k);
+          }
+          return out;
+        }
+        return value;
+      };
+
+      const content = await walk(row.content ?? {}, '');
+      if (n && !dryRun) {
         const { error: upErr } = await db
           .from('page_sections')
-          .update({ content: { ...content, image: next } })
+          .update({ content })
           .eq('id', row.id);
         if (upErr) console.error(`  page_sections/${row.id}: ${upErr.message}`);
       }

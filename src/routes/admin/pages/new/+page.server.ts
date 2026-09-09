@@ -42,6 +42,8 @@ export const actions: Actions = {
           heroTitle,
           heroIntro: '',
           heroImage: null,
+        heroAnchorNav: [],
+        heroOverlayMeta: [],
         heroVideoWebm: '',
         heroVideoMp4: '',
           heroVariant: 'page',

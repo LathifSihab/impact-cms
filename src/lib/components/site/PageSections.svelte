@@ -417,17 +417,31 @@
             {/each}
           </div>
         {:else if how(c) === 'fund_long'}
+          <!-- The number is laid over the picture, not printed above the
+               heading, so .fund-long-img is a container rather than the image
+               itself. -->
           {#each items as it (it.id)}
-            <div class="fund-long">
-              {#if it.image}
-                <Img class="fund-long-img" src={it.image} alt={it.title} role="wide" loading="lazy" />
-              {/if}
-              <div>
+            <article class="fund-long">
+              <div class="fund-long-img">
+                {#if it.image}
+                  <Img src={it.image} alt={it.alt || it.title} role="wide" loading="lazy" />
+                {/if}
                 <span class="num">{it.number ?? ''}</span>
+              </div>
+              <div>
                 <h3 class="d-m">{it.title}</h3>
                 {#if it.body}<p class="intro">{it.body}</p>{/if}
+                {#if it.bodyLong}
+                  <p class="body" style="margin-top:20px;max-width:620px">{it.bodyLong}</p>
+                {/if}
+                {#if it.tags?.length}
+                  <h4 class="waar">{nl ? 'Waar we op werken' : 'What we work on'}</h4>
+                  <ul class="ticks fund-ticks">
+                    {#each it.tags as tick (tick)}<li>{tick}</li>{/each}
+                  </ul>
+                {/if}
               </div>
-            </div>
+            </article>
           {/each}
         {:else}
           <div class="fund-grid" style="margin-top:26px">
@@ -640,6 +654,129 @@
           </div>
         {/if}
       {/if}
+    </section>
+
+  {:else if s.type === 'founders'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          <div>
+            {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+            {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
+            {#if str(c, 'names')}
+              <!-- The ampersand is its own span so the site can colour it. -->
+              {@const parts = str(c, 'names').split('&')}
+              <p class="founder-names">
+                {parts[0].trim()}{#if parts.length > 1}
+                  <span class="amp">&amp;</span> {parts.slice(1).join('&').trim()}
+                {/if}
+              </p>
+            {/if}
+          </div>
+          {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+        </div>
+
+        <!-- The second portrait mirrors the first: picture on the other side. -->
+        {#each list(c, 'people') as person, i (person.name || i)}
+          <div class="founder" class:founder--flip={i % 2 === 1}>
+            {#if person.image}
+              <Img src={person.image} alt={person.name} role="portrait" loading="lazy" />
+            {/if}
+            <div>
+              {#if person.tag}<span class="tag">{person.tag}</span>{/if}
+              {#if person.name}<h3 class="d-m" style="margin:12px 0 8px">{person.name}</h3>{/if}
+              {#if person.role}
+                <p class="meta" style="letter-spacing:.08em;text-transform:uppercase">{person.role}</p>
+              {/if}
+              {#if person.intro}<p class="intro" style="margin-top:22px">{person.intro}</p>{/if}
+              {#if person.body}<p class="body" style="margin-top:20px">{person.body}</p>{/if}
+              {#if person.body2}<p class="body" style="margin-top:20px">{person.body2}</p>{/if}
+              {#if person.quote}
+                <blockquote class="quote">
+                  {person.quote}
+                  {#if person.cite}<cite>{person.cite}</cite>{/if}
+                </blockquote>
+              {/if}
+            </div>
+          </div>
+        {/each}
+
+        {#if str(c, 'duoHeading') || str(c, 'duoBody')}
+          <div class="duo">
+            {#if str(c, 'duoImage')}
+              <Img src={str(c, 'duoImage')} alt={str(c, 'duoHeading')} role="card" loading="lazy" />
+            {/if}
+            <div>
+              {#if str(c, 'duoRunning')}<span class="running">{str(c, 'duoRunning')}</span>{/if}
+              {#if str(c, 'duoHeading')}<h3 class="d-l d-l--40">{str(c, 'duoHeading')}</h3>{/if}
+              {#if str(c, 'duoBody')}<p class="body">{str(c, 'duoBody')}</p>{/if}
+              {#if str(c, 'duoBody2')}<p class="body">{str(c, 'duoBody2')}</p>{/if}
+              {#if str(c, 'duoLinkLabel') && str(c, 'duoLinkHref')}
+                <p><a href={str(c, 'duoLinkHref')} class="tlink">{str(c, 'duoLinkLabel')}</a></p>
+              {/if}
+            </div>
+          </div>
+        {/if}
+      </div>
+    </section>
+
+  {:else if s.type === 'team'}
+    {@const experts = collections[`${s.position}`] ?? []}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        <div class="sec-head" data-reveal>
+          <div>
+            {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+            {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
+          </div>
+          {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+        </div>
+
+        {#if str(c, 'cardsHeading')}
+          <h3 class="h" style="margin-bottom:24px">{str(c, 'cardsHeading')}</h3>
+        {/if}
+        {#if list(c, 'cards').length}
+          <div class="team-cards">
+            {#each list(c, 'cards') as card, i (card.name || i)}
+              <a class="team-card" href={card.href || '#'}>
+                {#if card.image}
+                  <Img src={card.image} alt={card.name} role="portrait" loading="lazy" />
+                {/if}
+                <div class="team-body">
+                  {#if card.tag}<span class="tag">{card.tag}</span>{/if}
+                  {#if card.name}<h4>{card.name}</h4>{/if}
+                  {#if card.role}<p class="r">{card.role}</p>{/if}
+                  {#if card.body}<p class="body">{card.body}</p>{/if}
+                  {#if card.linkLabel}<span class="tlink">{card.linkLabel}</span>{/if}
+                </div>
+              </a>
+            {/each}
+          </div>
+        {/if}
+        {#if str(c, 'cardsNote')}
+          <p class="meta" style="margin-top:22px">{str(c, 'cardsNote')}</p>
+        {/if}
+
+        {#if str(c, 'gridHeading')}
+          <h3 class="h" style="margin:64px 0 8px">{str(c, 'gridHeading')}</h3>
+        {/if}
+        {#if str(c, 'gridLead')}
+          <p class="body" style="max-width:640px;margin-bottom:28px">{str(c, 'gridLead')}</p>
+        {/if}
+        {#if experts.length}
+          <!-- Unconfirmed experts never arrive here: the anon policy filters
+               them out before this component sees a row. -->
+          <div class="expert-grid">
+            {#each experts as it (it.id)}
+              <article class="expert">
+                <h4>{it.title}</h4>
+                {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
+                {#if it.body}<p class="body">{it.body}</p>{/if}
+              </article>
+            {/each}
+          </div>
+        {/if}
+      </div>
     </section>
 
   {:else if s.type === 'news_band'}
