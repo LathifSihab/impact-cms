@@ -531,6 +531,16 @@ Nothing is reported as unrecognised any more: `downloads` covers the /media file
 list and `split_list` covers the two-column comparison on /hosted-experiences,
 which were the last two blocks a person could not edit.
 
+## What is still open
+
+**[OPEN-ITEMS.md](OPEN-ITEMS.md)** — checked against the live site after the
+first deploy. What is unfinished, what is a decision rather than a task, and
+what should deliberately stay as it is, with the steps for each.
+
+The short version: the waitlist form needs one environment variable to become
+usable, three blocks are empty because their consent gates are doing their job,
+and the privacy text is drafted and waiting on a lawyer.
+
 ## Deploying
 
 **[DEPLOYMENT.md](DEPLOYMENT.md)** is the step-by-step: Supabase project,
