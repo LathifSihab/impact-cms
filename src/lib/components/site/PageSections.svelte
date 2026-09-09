@@ -426,24 +426,69 @@
       </div>
 
       {#if consented && list(c, 'clips').length}
+        {@const clips = list(c, 'clips')}
+        {@const total = String(clips.length).padStart(2, '0')}
         <!-- Rendered only against a recorded consent. These clips show
              minors; 01-BRIEF.md is explicit that they come down if the
-             written permission never arrives. -->
+             written permission never arrives.
+
+             cinema.js pins this block and drives it from scroll position. It
+             reaches for .shot-dim, .glass, [data-sound] and the four hud
+             hooks by name, so this is the static site's markup element for
+             element — a missing .shot-dim is not a cosmetic difference, it is
+             a clip that never brightens when it becomes the active one. -->
         <div class="cinema" data-cinema>
           <div class="cinema-viewport">
             <div class="cinema-track" data-cinema-track>
-              {#each list(c, 'clips') as clip (clip.mp4 || clip.webm)}
+              {#each clips as clip, i (clip.mp4 || clip.webm || i)}
                 <figure class="shot" data-shot>
-                  <video controls preload="none" playsinline muted loop poster={clip.poster ? imageUrl(clip.poster) : undefined}>
+                  <video
+                    controls
+                    preload="none"
+                    playsinline
+                    muted
+                    loop
+                    poster={clip.poster ? imageUrl(clip.poster) : undefined}
+                    aria-label={clip.alt || clip.title || undefined}
+                  >
                     {#if clip.webm}<source src={imageUrl(clip.webm)} type="video/webm" />{/if}
                     {#if clip.mp4}<source src={imageUrl(clip.mp4)} type="video/mp4" />{/if}
+                    {nl ? 'Je browser kan deze video niet spelen.' : 'Your browser cannot play this video.'}
                   </video>
-                  {#if clip.caption}<figcaption>{clip.caption}</figcaption>{/if}
+                  <span class="shot-dim" aria-hidden="true"></span>
+                  <button class="shot-sound" type="button" data-sound aria-pressed="false">
+                    <span class="on">{nl ? 'Geluid aan' : 'Sound on'}</span><span class="off"
+                      >{nl ? 'Geluid uit' : 'Sound off'}</span
+                    >
+                  </button>
+                  {#if clip.title || clip.meta}
+                    <figcaption class="glass">
+                      <span class="glass-n">{String(i + 1).padStart(2, '0')} / {total}</span>
+                      {#if clip.title}<b>{clip.title}</b>{/if}
+                      {#if clip.meta}<span class="glass-m">{clip.meta}</span>{/if}
+                    </figcaption>
+                  {/if}
                 </figure>
               {/each}
             </div>
           </div>
+          <div class="cinema-hud">
+            <button type="button" data-cinema-prev aria-label={nl ? 'Vorige clip' : 'Previous clip'}
+              >&lsaquo;</button
+            >
+            <span class="cinema-progress" aria-hidden="true"><i data-cinema-bar></i></span>
+            <span class="cinema-count" aria-hidden="true"><b data-cinema-n>01</b> / {total}</span>
+            <button type="button" data-cinema-next aria-label={nl ? 'Volgende clip' : 'Next clip'}
+              >&rsaquo;</button
+            >
+          </div>
         </div>
+
+        {#if str(c, 'note')}
+          <div class="reel-tail">
+            <p class="reel-note">{str(c, 'note')}</p>
+          </div>
+        {/if}
       {/if}
     </section>
 

@@ -314,11 +314,19 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     }
 
     if (inner.includes('data-cinema') || inner.includes('reel-head')) {
+      /* The caption is three separate elements on the site — a counter, the
+         quote in bold, and who said it — so it is read as three fields rather
+         than flattened into one string that could never be rendered back into
+         the same markup. The counter itself is not stored: the renderer
+         derives it from the clip's position, so it cannot drift out of step
+         with the number of clips. */
       const clips = [...inner.matchAll(/<figure class="shot"[\s\S]*?<\/figure>/g)].map((sh) => ({
         webm: (sh[0].match(/src="([^"]+\.webm)"/) ?? [])[1] ?? '',
         mp4: (sh[0].match(/src="([^"]+\.mp4)"/) ?? [])[1] ?? '',
         poster: (sh[0].match(/poster="([^"]+)"/) ?? [])[1] ?? '',
-        caption: first(sh[0], /<figcaption[^>]*>([\s\S]*?)<\/figcaption>/)
+        title: first(sh[0], /<b>([\s\S]*?)<\/b>/),
+        meta: first(sh[0], /<span class="glass-m">([\s\S]*?)<\/span>/),
+        alt: decode((sh[0].match(/aria-label="([^"]*)"/) ?? [])[1] ?? '')
       }));
       sections.push({
         type: 'reel',
@@ -329,6 +337,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
           body: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
           word: first(inner, /<p class="reel-word"[^>]*>([\s\S]*?)<\/p>/),
+          note: first(inner, /<p class="reel-note">([\s\S]*?)<\/p>/),
           clips,
           // Never seeded on. The consent for these clips is not held, and the
           // seed is not the place to assert that it is.
@@ -575,17 +584,33 @@ async function keepSectionImages(pageId: string, locale: string, next: Section[]
      just the one at the top level. Reading only `image` here is what silently
      reverted the reel's clips to their seeded `assets/...` paths. */
   const managed = new Map<string, Map<string, string>>();
+  const consents = new Map<string, string>();
   for (const row of (data ?? []) as Record<string, any>[]) {
+    const key = row.anchor || `#${row.position}`;
     const found = new Map<string, string>();
     collectUploads(row.content ?? {}, '', found);
-    if (found.size) managed.set(row.anchor || `#${row.position}`, found);
+    if (found.size) managed.set(key, found);
+
+    const consent = String(row.content?.consentOnFile ?? '');
+    if (consent) consents.set(key, consent);
   }
-  if (managed.size === 0) return next;
+  if (managed.size === 0 && consents.size === 0) return next;
 
   return next.map((section, i) => {
-    const keep = managed.get(section.anchor || `#${i}`);
-    if (!keep) return section;
-    return { ...section, content: restoreUploads(section.content, '', keep) as Section['content'] };
+    const key = section.anchor || `#${i}`;
+    let content = section.content;
+
+    const keep = managed.get(key);
+    if (keep) content = restoreUploads(content, '', keep) as Section['content'];
+
+    /* A recorded consent is an editorial act, and reseeding must not undo it.
+       The seed still never turns the tick ON — asserting a permission nobody
+       gave is the one thing this flag exists to prevent — but it has no
+       business turning OFF what someone deliberately recorded. */
+    const consent = consents.get(key);
+    if (consent && !content.consentOnFile) content = { ...content, consentOnFile: consent };
+
+    return { ...section, content };
   });
 }
 

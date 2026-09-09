@@ -699,6 +699,29 @@ then cost it again. The victim is the *current value* field (`logo=`,
 `hero_image=`): mangled, the server sees a path it does not manage, decides
 there is no old file, and cleans nothing up while still returning 200.
 
+## The video reel
+
+The homepage reel is the scroll-driven cinema from `site/index.html`, markup for
+markup. Its clips only render once **Schriftelijke toestemming van de ouders is
+op dossier** is ticked on the section — that is the consent gate, not a bug.
+
+- [ ] With the tick off: the heading, the background word and the intro show;
+      no `<video>`, no clips, and no note about sound. With it on: four clips.
+- [ ] Each clip has a dimming layer, a **Geluid aan / Geluid uit** button, and a
+      glass caption reading `01 / 04`, the quote in bold, then who said it.
+- [ ] The counter is generated, not typed. Delete a clip and the remaining ones
+      renumber themselves — `01 / 03`, and the hud total follows.
+- [ ] Below the clips: the prev/next arrows, the progress bar and the counter.
+- [ ] Scroll into it. The block pins, and the active clip scales up and
+      brightens while its caption fades in.
+- [ ] Block `cdnjs.cloudflare.com` in DevTools and reload. The animation is gone
+      and the clips are still there, scrollable and playable — GSAP is an
+      enhancement, not a dependency.
+- [ ] `/en` with consent unticked shows the English head and no clips.
+
+GSAP and `cinema.js` load only on a page that actually has a `[data-cinema]`,
+so the other ten pages do not pay for them.
+
 ## Responsive image variants
 
 Every uploaded photo gets a ladder of AVIF and WebP copies beside it, and the

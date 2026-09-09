@@ -314,8 +314,23 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { name: 'mp4', label: 'Video (MP4)', kind: 'video' },
           { name: 'webm', label: 'Video (WebM, optioneel)', kind: 'video' },
           { name: 'poster', label: 'Posterbeeld', kind: 'image' },
-          { name: 'caption', label: 'Onderschrift', kind: 'textarea' }
+          /* The caption is three lines on the site, not one: a counter, the
+             quote, and who said it. The counter is generated from the clip's
+             position, so it can never disagree with the number of clips. */
+          { name: 'title', label: 'Uitspraak', kind: 'text' },
+          { name: 'meta', label: 'Wie en waar', kind: 'text' },
+          {
+            name: 'alt',
+            label: 'Omschrijving (screenreader)',
+            kind: 'text'
+          }
         ]
+      },
+      {
+        name: 'note',
+        label: 'Notitie onder de reel',
+        kind: 'textarea',
+        help: 'De kleine tekst onder de clips, over geluid en over de posterbeelden.'
       },
       {
         name: 'consentOnFile',

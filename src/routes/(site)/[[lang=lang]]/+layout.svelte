@@ -50,6 +50,33 @@
     };
     loadNext();
 
+    /* The scroll-driven reel, and only on a page that has one.
+     *
+     * cinema.js reads window.gsap and window.ScrollTrigger at call time and
+     * returns quietly when either is missing, so a blocked CDN costs the
+     * animation and nothing else: the clips stay in the track, scrollable and
+     * playable. Loading it unconditionally would put 70 kB of GSAP on every
+     * page for a section that only the homepage has. */
+    if (document.querySelector('[data-cinema]')) {
+      const cinema = [
+        'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js',
+        '/assets/js/cinema.js'
+      ];
+      let j = 0;
+      const loadCinema = () => {
+        if (j >= cinema.length) return;
+        const el = document.createElement('script');
+        el.src = cinema[j++];
+        el.onload = loadCinema;
+        // ScrollTrigger must follow gsap, and cinema.js both — so a failure
+        // stops the chain rather than running a consumer without its plugin.
+        el.onerror = () => {};
+        document.body.appendChild(el);
+      };
+      loadCinema();
+    }
+
     // …and if it loaded but never ran (a throw partway through), catch that too.
     const guard = setTimeout(() => {
       const hidden = document.querySelectorAll('[data-reveal]:not(.is-in)');
