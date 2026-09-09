@@ -229,5 +229,13 @@ export function sectionSummary(type: string, content: Record<string, unknown>): 
     const cards = Array.isArray(content?.cards) ? content.cards : [];
     return `${cards.length} kaart${cards.length === 1 ? '' : 'en'}`;
   }
+  if (type === 'collection') {
+    /* A collection often has no heading of its own — the format sections on
+       /events do not — and "—" tells the reader nothing about what the row is.
+       Name what it pulls in instead. */
+    const source = String(content?.source ?? '');
+    const label = COLLECTION_SOURCES.find((c) => c.value === source)?.label;
+    return label ? `uit ${label}` : '';
+  }
   return '';
 }
