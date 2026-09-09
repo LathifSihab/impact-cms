@@ -964,7 +964,7 @@
           data-demo-form
           novalidate
           name={str(c, 'formName') || 'contact'}
-          action="/"
+          action="/api/subscribe"
           data-netlify="true"
           {...{ 'netlify-honeypot': 'bot-field' }}
         >
@@ -1248,7 +1248,7 @@
           data-newsletter
           novalidate
           name="newsletter"
-          action="/"
+          action="/api/subscribe"
           data-netlify="true"
           {...{ 'netlify-honeypot': 'bot-field' }}
         >

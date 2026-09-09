@@ -118,7 +118,7 @@
         ? 'Nieuwe verhalen, events en partnerships. Eén mail per maand.'
         : 'New stories, events and partnerships. One mail a month.'}
     </p>
-    <form class="news-form" data-newsletter novalidate name="newsletter" action="/">
+    <form class="news-form" data-newsletter novalidate name="newsletter" action="/api/subscribe">
       <input type="hidden" name="form-name" value="newsletter" />
       <input type="hidden" name="bot-field" />
       <div class="field-row">

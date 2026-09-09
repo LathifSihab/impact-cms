@@ -322,7 +322,7 @@
   <div class="cta-card cta-card--red">
     <h3>{nl ? 'Blijf op de hoogte' : 'Stay in the loop'}</h3>
     <p>{nl ? 'Nieuwe events zodra ze bevestigd zijn.' : 'New events as soon as they are confirmed.'}</p>
-    <form class="news-form" data-newsletter novalidate name="newsletter" action="/">
+    <form class="news-form" data-newsletter novalidate name="newsletter" action="/api/subscribe">
       <input type="hidden" name="form-name" value="newsletter" />
       <input type="hidden" name="bot-field" />
       <div class="field-row">

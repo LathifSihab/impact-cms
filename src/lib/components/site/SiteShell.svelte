@@ -343,7 +343,7 @@
       <h2 id="dome-title">{T.domeTitle}</h2>
       <p class="body">{T.domeBody}</p>
       <!-- Posts to the live Netlify function, same as the static site. -->
-      <form class="dome-form" data-newsletter data-dome-form novalidate name="newsletter" action="/">
+      <form class="dome-form" data-newsletter data-dome-form novalidate name="newsletter" action="/api/subscribe">
         <input type="hidden" name="form-name" value="newsletter" />
         <input type="hidden" name="bot-field" />
         <label class="sr-only" for="dome-email">E-mail</label>
