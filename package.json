@@ -12,6 +12,7 @@
     "db:reset": "supabase db reset",
     "env:local": "node scripts/env-local.ts",
     "seed": "node scripts/seed.ts",
+    "seed:pages": "node scripts/seed-pages.ts",
     "user:create": "node scripts/create-user.ts",
     "images:migrate": "node scripts/migrate-images.ts"
   },

@@ -81,6 +81,7 @@ scripts/seed.ts        loads reference/content/ — the real events, journal,
 scripts/create-user.ts makes a login
 scripts/env-local.ts   writes .env from the running local stack
 scripts/migrate-images.ts  legacy assets/... paths -> managed uploads
+scripts/seed-pages.ts  lifts the eight prose pages out of site/*.html
 src/lib/collections.ts THE FILE TO READ FIRST. Ten content types, every field
 src/lib/records.ts     form → row, and the Dutch validation messages
 src/lib/server/        database access, and the Brevo / Ticket Tailor reads
@@ -258,6 +259,57 @@ Storage — everything else is behind that one module.
 SVG is rejected. It is an image to a designer and a script host to a browser, and
 these files are served from the same origin as the backoffice. Type is decided by
 magic number, not by the `Content-Type` the client claims.
+
+## Page configuration
+
+`/admin/pages` configures the eight prose pages — Home, Over, Samenwerken,
+Social Impact, Hosted Experiences, Media, Contact, Privacy. Events and Journal
+are not here: they are lists, driven by their own content types.
+
+A page is a row plus an ordered list of sections:
+
+```sql
+pages          id (slug), locale, nav_label, sort_order, hero_label,
+               hero_title, hero_intro, hero_image, hero_variant, seo,
+               published
+
+page_sections  page_id, position, type, ground, anchor, content jsonb
+               -- type: sec_head | rich_text | media_text | collection
+               --     | cta_cards | band | news_band
+```
+
+**The section types are typed, not generic blocks.** Each maps onto markup the
+stylesheet already has — `.sec-head`, `.two-col--media`, `.cta-cards`, `.band`,
+`.news-band` — so a page assembled in the backoffice renders as the site rather
+than as a page builder's idea of one. `src/lib/sections.ts` describes them once
+and both the editor and the renderer read that description.
+
+**A `collection` section points at existing content** rather than repeating it.
+Foundations, formats, age groups, tiers, partners, figures and experts already
+have their own screens; a generic block builder would invite someone to retype
+them as loose text. The consent gates still apply — the public page reads as
+anon, so unconfirmed experts and figures are filtered by policy before they
+reach the renderer.
+
+`published` is a draft flag, not a consent gate: unpublished pages stay editable
+and return 404 to visitors, enforced by RLS rather than by the route.
+
+### Seeding
+
+`npm run seed:pages` lifts the pages out of `site/*.html` — hero, section
+headings, leads, two-column blocks, CTA cards, bands — so the screens open with
+the client's own words instead of eight empty forms or invented copy. It reports
+what it could not place rather than mangling it:
+
+```
+home                  9 secties
+over                  7 secties
+hosted-experiences    4 secties   (1 niet herkend)
+```
+
+The bespoke bits — the homepage cinema reel, the founders block, the contact
+form — have no section type and are still the static site's markup. Add them as
+sections in the editor, or leave them.
 
 ## Not done
 

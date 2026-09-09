@@ -482,7 +482,49 @@ adapter locally and let Vercel do the Vercel build.
 
 ---
 
-# E. The rendered public site
+# E. Page configuration
+
+`/admin/pages` — the eight prose pages. Seed them first:
+
+```bash
+npm run seed:pages
+```
+
+Expect 9, 7, 8, 6, 4, 4, 2 and 1 sections, with two blocks reported as not
+recognised. Those are bespoke markup with no section type; they are listed
+rather than mangled.
+
+- [ ] `/admin/pages` lists all eight with their slug, hero title, section count
+      and Live/Concept badge.
+- [ ] Open **Over IMPACT.** The sections are collapsed accordions showing type,
+      heading and background — the page's outline at a glance.
+- [ ] Expand one. It has the fields for its type, plus Background and Anchor.
+- [ ] Reorder with ↑ ↓, delete with ×, and **+ Sectie toevoegen** offers the
+      seven types with a line on each.
+- [ ] Upload a hero image: JPEG/PNG/WebP, preview appears before saving, a
+      non-image is refused.
+- [ ] **Wijzigingen bewaren** → "Bewaard.", then open `/over` in a new tab and
+      the change is there. No rebuild.
+- [ ] Add a **Inhoud uit een type** section, source Fundamenten. The six
+      foundations render on the public page — pulled from the content type, not
+      retyped.
+- [ ] Untick **Zichtbaar op de site** and save. `/media` returns 404 to a
+      visitor while staying editable in the backoffice.
+
+Enforced in the database, not the route:
+
+```bash
+# a draft is invisible to anon
+curl -s "$API/rest/v1/pages?select=id&id=eq.privacy" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"
+# and anon cannot write pages at all
+curl -s -X POST "$API/rest/v1/pages" -H "apikey: $ANON" -H "Authorization: Bearer $ANON"   -H "Content-Type: application/json" -d '{"id":"x","nav_label":"x"}'
+```
+
+Expect `[]` for the first while it is unpublished, and `42501` for the second.
+
+---
+
+# E2. The rendered public site
 
 These pages come out of the database, so this is where you prove the loop the
 brief actually asked for: change content, reload, see it.
