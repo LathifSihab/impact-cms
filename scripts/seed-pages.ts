@@ -30,6 +30,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envHelp } from './env-help.ts';
+import { PRIVACY_NL, PRIVACY_EN } from './privacy-text.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -88,7 +89,7 @@ const PAGES: { id: string; file: string; navLabel: string; heroVariant: string }
   },
   { id: 'media', file: 'media.html', navLabel: 'Media', heroVariant: 'page' },
   { id: 'contact', file: 'contact.html', navLabel: 'Contact', heroVariant: 'page' },
-  { id: 'privacy', file: 'privacy.html', navLabel: 'Privacyverklaring', heroVariant: 'page' }
+  { id: 'privacy', file: 'privacy.html', navLabel: 'Privacyverklaring', heroVariant: 'plain' }
 ];
 
 /* --- extraction ----------------------------------------------------------- */
@@ -214,7 +215,7 @@ function anchorOf(openTag: string): string | null {
   return m ? m[1] : null;
 }
 
-function extractSections(html: string): { sections: Section[]; skipped: string[] } {
+function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: Section[]; skipped: string[] } {
   const sections: Section[] = [];
   const skipped: string[] = [];
 
@@ -447,6 +448,97 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       continue;
     }
 
+    /* The legal pages. The static markup is a skeleton with bracketed gaps, so
+       the copy comes from privacy-text.ts — everything answerable from what
+       this project actually does, written out for the lawyer to check. What is
+       genuinely unknown, the legal entity's own details, stays bracketed. */
+    if (inner.includes('legal-draft')) {
+      const copy = locale === 'en' ? PRIVACY_EN : PRIVACY_NL;
+      sections.push({ type: 'legal', ground, anchor, content: { ...copy } });
+      continue;
+    }
+
+    /* Media's showcase video, its clip grid and its photo archive. The cine
+       block sits outside .wrap on purpose, so it is read from the section as a
+       whole rather than from the head. */
+    if (inner.includes('data-cine')) {
+      const cine = inner.slice(inner.indexOf('<div class="cine"'));
+      const head = inner.slice(0, inner.indexOf('<div class="cine"'));
+      if (first(head, /<h2[^>]*>([\s\S]*?)<\/h2>/)) {
+        sections.push({
+          type: 'sec_head',
+          ground,
+          anchor,
+          content: {
+            running: first(head, /<span class="running">([\s\S]*?)<\/span>/),
+            heading: first(head, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+            headingStyle: headingStyleOf(head),
+            lead: first(head, /<p class="body">([\s\S]*?)<\/p>/)
+          }
+        });
+      }
+      sections.push({
+        type: 'cine',
+        ground: 'white',
+        anchor: '',
+        content: {
+          webm: (cine.match(/<source src="([^"]+.webm)"/) ?? [])[1] ?? '',
+          mp4: (cine.match(/<source src="([^"]+.mp4)"/) ?? [])[1] ?? '',
+          poster: (cine.match(/poster="([^"]+)"/) ?? [])[1] ?? '',
+          alt: decode((cine.match(/aria-label="([^"]*)"/) ?? [])[1] ?? ''),
+          kicker: first(cine, /<span class="cine-kicker">([\s\S]*?)<\/span>/),
+          line: first(cine, /<p class="cine-line">([\s\S]*?)<\/p>/),
+          note: first(cine, /<span class="cine-note">([\s\S]*?)<\/span>/)
+        }
+      });
+
+      if (inner.includes('class="vcard"')) {
+        sections.push({
+          type: 'vcards',
+          ground: 'white',
+          anchor: '',
+          content: {
+            running: '',
+            heading: '',
+            lead: '',
+            clips: [...inner.matchAll(/<figure class="vcard">([\s\S]*?)<\/figure>/g)].map((v) => ({
+              webm: (v[1].match(/<source src="([^"]+.webm)"/) ?? [])[1] ?? '',
+              mp4: (v[1].match(/<source src="([^"]+.mp4)"/) ?? [])[1] ?? '',
+              poster: (v[1].match(/poster="([^"]+)"/) ?? [])[1] ?? '',
+              alt: decode((v[1].match(/aria-label="([^"]*)"/) ?? [])[1] ?? ''),
+              caption: first(v[1], /<figcaption>([\s\S]*?)<\/figcaption>/)
+            })),
+            // Never seeded on: the consent for these clips is not held.
+            consentOnFile: ''
+          }
+        });
+      }
+      continue;
+    }
+
+    if (inner.includes('class="mosaic"')) {
+      sections.push({
+        type: 'mosaic',
+        ground,
+        anchor,
+        content: {
+          running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
+          lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          shots: [...inner.matchAll(/<button class="shot-open"[^>]*aria-label="([^"]*)"[^>]*>([\s\S]*?)<\/button>/g)].map(
+            (b) => ({
+              image: (b[2].match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+              caption: first(b[2], /<figcaption class="shot-cap">([\s\S]*?)<\/figcaption>/),
+              alt: decode(b[1]).replace(/ [^ ]*vergroot$| [^ ]*enlarge$/, '').trim()
+            })
+          ),
+          note: first(inner.slice(inner.indexOf('</div>', inner.indexOf('mosaic'))), /<p class="meta"[^>]*>([\s\S]*?)<\/p>/)
+        }
+      });
+      continue;
+    }
+
     /* The contact and request forms. Both pages post the same .wl-card shape,
        so one type carries them, with the fields as rows. */
     if (inner.includes('class="wl-card"') && inner.includes('<form')) {
@@ -587,6 +679,18 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
                it here is the difference between that section having its image
                and quietly losing it. */
             image: (inner.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+            practical: [...inner.matchAll(/<div class="row"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g)].map(
+              (r) => ({ label: decode(r[1]), value: decode(r[2]) })
+            ),
+            asideRunning: (() => {
+              const runs = [...inner.matchAll(/<span class="running">([\s\S]*?)<\/span>/g)];
+              return runs[1] ? decode(runs[1][1]) : '';
+            })(),
+            quote: (() => {
+              const q = inner.match(/<blockquote class="quote"[^>]*>([\s\S]*?)(?:<cite>[\s\S]*?<\/cite>)?\s*<\/blockquote>/);
+              return q ? decode(q[1].replace(/<cite>[\s\S]*?<\/cite>/, '')).trim() : '';
+            })(),
+            cite: first(inner, /<cite>([\s\S]*?)<\/cite>/),
             layout: 'plain',
             imageSide: 'right',
             ctaLabel: btns[0] ? decode(btns[0][2]) : '',
@@ -1011,7 +1115,7 @@ for (const [i, page] of PAGES.entries()) {
     ? mainMatch[1] + html.slice(mainMatch.index! + mainMatch[0].length).split('<footer')[0]
     : html;
   const hero = extractHero(html);
-  const extracted = extractSections(main);
+  const extracted = extractSections(main, locale);
   const lifted = page.id === 'home' ? withHomeCollections(extracted.sections) : extracted.sections;
   const sections = await keepSectionImages(page.id, locale, lifted);
   const skipped = extracted.skipped;

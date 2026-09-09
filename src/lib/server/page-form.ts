@@ -127,7 +127,7 @@ export async function parseSections(
         continue;
       }
 
-      if (field.kind === 'image') {
+      if (field.kind === 'image' || field.kind === 'video') {
         const current = String(form.get(base) ?? '').trim();
         const cleared = form.get(`${base}__clear`) != null;
         const file = asFile(form.get(`${base}__file`));

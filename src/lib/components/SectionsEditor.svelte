@@ -157,10 +157,14 @@
                 <select bind:value={item.content[f.name]}>
                   {#each f.options as o (o.value)}<option value={o.value}>{o.label}</option>{/each}
                 </select>
-              {:else if f.kind === 'image'}
+              {:else if f.kind === 'image' || f.kind === 'video'}
                 <!-- Uploads post outside the JSON blob; the server merges the
                      stored path back into this section before validating. -->
-                <ImageInput name="{name}__{i}__{f.name}" value={String(item.content[f.name] ?? '')} />
+                <ImageInput
+                  name="{name}__{i}__{f.name}"
+                  kind={f.kind === 'video' ? 'video' : 'image'}
+                  value={String(item.content[f.name] ?? '')}
+                />
               {:else if f.kind === 'tags'}
                 <TagsEditor
                   name="{name}__{i}__{f.name}__tags"

@@ -62,7 +62,15 @@
      * curtain is lifted by the failsafe in app.html, and the reel's clips stay
      * scrollable and playable. */
     const preloading = document.documentElement.classList.contains('is-preloading');
-    const cinema = Boolean(document.querySelector('[data-cinema]'));
+    // cinema.js drives both the pinned reel and the Media showcase video.
+    const cinema = Boolean(document.querySelector('[data-cinema], [data-cine]'));
+
+    /* The photo archive opens in a lightbox. Loaded only where there is one. */
+    if (document.querySelector('[data-gallery]')) {
+      const el = document.createElement('script');
+      el.src = '/assets/js/lightbox.js';
+      document.body.appendChild(el);
+    }
 
     if (preloading || cinema) {
       const chain = ['https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js'];

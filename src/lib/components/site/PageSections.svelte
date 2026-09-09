@@ -179,7 +179,23 @@
               {/if}
             </div>
           {/if}
+          {#if list(c, 'practical').length}
+            <div class="practical" style="margin-top:28px">
+              {#each list(c, 'practical') as row (row.label)}
+                <div class="row"><span>{row.label}</span><span>{row.value}</span></div>
+              {/each}
+            </div>
+          {/if}
         </div>
+        {#if str(c, 'quote')}
+          <div>
+            {#if str(c, 'asideRunning')}<span class="running">{str(c, 'asideRunning')}</span>{/if}
+            <blockquote class="quote" style="margin-top:22px">
+              {str(c, 'quote')}
+              {#if str(c, 'cite')}<cite>{str(c, 'cite')}</cite>{/if}
+            </blockquote>
+          </div>
+        {/if}
         {#if !left && str(c, 'image')}
           {#if media}
             <Img src={str(c, 'image')} alt={str(c, 'heading')} role="wide" style="width:100%;aspect-ratio:16/9;object-fit:cover" />
@@ -976,6 +992,168 @@
             {/if}
           </div>
         {/if}
+      </div>
+    </section>
+
+  {:else if s.type === 'cine'}
+    <!-- Full bleed on purpose: no .wrap. cinema.js finds it by [data-cine] and
+         wires the sound toggle; without the script it is still a poster with a
+         caption over it. -->
+    <div class="cine" data-cine id={s.anchor || undefined}>
+      <div class="cine-frame">
+        <video
+          class="cine-video"
+          muted
+          loop
+          playsinline
+          preload="none"
+          poster={str(c, 'poster') ? imageUrl(str(c, 'poster')) : undefined}
+          aria-label={str(c, 'alt') || undefined}
+        >
+          {#if str(c, 'webm')}<source src={imageUrl(str(c, 'webm'))} type="video/webm" />{/if}
+          {#if str(c, 'mp4')}<source src={imageUrl(str(c, 'mp4'))} type="video/mp4" />{/if}
+        </video>
+      </div>
+      <div class="cine-glass">
+        {#if str(c, 'kicker')}<span class="cine-kicker">{str(c, 'kicker')}</span>{/if}
+        {#if str(c, 'line')}<p class="cine-line">{str(c, 'line')}</p>{/if}
+        {#if str(c, 'note')}<span class="cine-note">{str(c, 'note')}</span>{/if}
+      </div>
+      <button class="cine-sound" type="button" data-cine-sound aria-pressed="false">
+        <span class="on">{nl ? 'Geluid aan' : 'Sound on'}</span><span class="off"
+          >{nl ? 'Geluid uit' : 'Sound off'}</span
+        >
+      </button>
+    </div>
+
+  {:else if s.type === 'vcards'}
+    {@const consented = str(c, 'consentOnFile') === 'ja'}
+    {@const clips = list(c, 'clips')}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        {#if str(c, 'running') || str(c, 'heading')}
+          <div class="sec-head" data-reveal>
+            <div>
+              {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+              {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
+            </div>
+            {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+          </div>
+        {/if}
+        {#if consented && clips.length}
+          <!-- Same gate as the homepage reel, and for the same reason: these
+               are minors whose written permission 01-BRIEF records as not held. -->
+          <div class="vcards vcards--4">
+            {#each clips as clip, i (clip.mp4 || clip.webm || i)}
+              <figure class="vcard">
+                <div class="vwrap">
+                  <video
+                    controls
+                    preload="none"
+                    playsinline
+                    poster={clip.poster ? imageUrl(clip.poster) : undefined}
+                    aria-label={clip.alt || clip.caption || undefined}
+                  >
+                    {#if clip.webm}<source src={imageUrl(clip.webm)} type="video/webm" />{/if}
+                    {#if clip.mp4}<source src={imageUrl(clip.mp4)} type="video/mp4" />{/if}
+                    {nl ? 'Je browser kan deze video niet spelen.' : 'Your browser cannot play this video.'}
+                  </video>
+                  <button class="vhint" type="button">{nl ? 'Tik voor geluid' : 'Tap for sound'}</button>
+                </div>
+                {#if clip.caption}<figcaption>{clip.caption}</figcaption>{/if}
+              </figure>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    </section>
+
+  {:else if s.type === 'mosaic'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap">
+        {#if str(c, 'running') || str(c, 'heading')}
+          <div class="sec-head" data-reveal>
+            <div>
+              {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+              {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
+            </div>
+            {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+          </div>
+        {/if}
+        <!-- Each shot is a button, not a figure: lightbox.js opens it, so it
+             has to be reachable by keyboard and announce itself as an action. -->
+        <div class="mosaic" data-gallery>
+          {#each list(c, 'shots') as shot, i (shot.image || i)}
+            <button
+              class="shot-open"
+              type="button"
+              data-shot-open
+              aria-label="{shot.caption || shot.alt} — {nl ? 'vergroot' : 'enlarge'}"
+            >
+              <Img src={shot.image} alt={shot.alt || shot.caption || ''} role="card" loading="lazy" />
+              <!-- svelte-ignore a11y_figcaption_parent -->
+              <!-- A figcaption outside a figure is what the static site ships,
+                   and .shot-cap is styled off that element. Kept so the markup
+                   matches; the button already carries the accessible name. -->
+              {#if shot.caption}<figcaption class="shot-cap">{shot.caption}</figcaption>{/if}
+            </button>
+          {/each}
+        </div>
+        {#if str(c, 'note')}<p class="meta" style="margin-top:22px">{str(c, 'note')}</p>{/if}
+      </div>
+    </section>
+
+  {:else if s.type === 'legal'}
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap two-col two-col--story">
+        <div>
+          {#if str(c, 'draftNotice')}
+            <!-- role=note, because this is an editorial warning about the text
+                 rather than part of the text. It disappears when the field is
+                 cleared, which is the signal that legal signed it off. -->
+            <div class="legal-draft" role="note">{@html str(c, 'draftNotice')}</div>
+          {/if}
+          {#each list(c, 'blocks') as block, i (block.heading || i)}
+            {#if block.heading}
+              <h2 class="d-l d-l--40" style={i === 0 ? 'margin:34px 0 18px' : 'margin:40px 0 18px'}>
+                {block.heading}
+              </h2>
+            {/if}
+            {#if block.body}<p class="body">{@html block.body}</p>{/if}
+            {#if block.ticks}
+              <div class="ticks">
+                <ul>
+                  {#each String(block.ticks).split(/\r?\n/).map((t) => t.trim()).filter(Boolean) as tick (tick)}
+                    <li>{@html tick}</li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+          {/each}
+          {#if str(c, 'updated')}
+            <p class="meta" style="margin-top:40px">{str(c, 'updated')}</p>
+          {/if}
+        </div>
+        <aside>
+          <div class="wl-card">
+            {#if str(c, 'asideRunning')}<span class="running">{str(c, 'asideRunning')}</span>{/if}
+            {#if str(c, 'asideHeading')}
+              <h2 style="margin-top:16px">{str(c, 'asideHeading')}</h2>
+            {/if}
+            {#if str(c, 'asideTicks')}
+              <div class="ticks">
+                <ul>
+                  {#each String(str(c, 'asideTicks')).split(/\r?\n/).map((t) => t.trim()).filter(Boolean) as tick (tick)}
+                    <li>{tick}</li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
+            {#if str(c, 'asideNote')}
+              <p class="meta" style="margin-top:18px">{@html str(c, 'asideNote')}</p>
+            {/if}
+          </div>
+        </aside>
       </div>
     </section>
 

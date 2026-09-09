@@ -15,6 +15,9 @@
 
   const isHome = $derived(page.heroVariant === 'home');
   const isOverlaid = $derived(page.heroVariant === 'overlaid');
+  /* The legal pages use a quieter hero: no image, no reveal, and the standfirst
+     styled as .stand rather than an intro. */
+  const isPlain = $derived(page.heroVariant === 'plain');
 
   const variantClass = $derived(
     isHome
@@ -74,6 +77,15 @@
       {/if}
 {/snippet}
 
+{#if isPlain}
+  <header class="hero hero--page">
+    <div class="wrap">
+      {#if page.heroLabel}<span class="running">{page.heroLabel}</span>{/if}
+      <h1 class="d-xl">{page.heroTitle}</h1>
+      {#if page.heroIntro}<p class="stand">{page.heroIntro}</p>{/if}
+    </div>
+  </header>
+{:else}
 <header class={variantClass} data-reveal-root>
   {#if page.heroImage}
     <!-- The still is also the poster. main.js reads data-video-webm off it,
@@ -127,3 +139,4 @@
     {/if}
   </div>
 </header>
+{/if}

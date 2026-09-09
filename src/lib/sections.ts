@@ -27,7 +27,11 @@ export type SectionType =
   | 'reel'
   | 'founders'
   | 'team'
-  | 'form';
+  | 'form'
+  | 'cine'
+  | 'vcards'
+  | 'mosaic'
+  | 'legal';
 
 export type Ground = 'white' | 'sand' | 'black' | 'red';
 
@@ -40,7 +44,7 @@ export const GROUNDS: { value: Ground; label: string }[] = [
 
 /** A field inside a section's `content` payload. */
 export type SectionField =
-  | { name: string; label: string; kind: 'text' | 'textarea' | 'markdown' | 'image' | 'url'; help?: string; placeholder?: string }
+  | { name: string; label: string; kind: 'text' | 'textarea' | 'markdown' | 'image' | 'video' | 'url'; help?: string; placeholder?: string }
   | { name: string; label: string; kind: 'select'; options: { value: string; label: string }[]; help?: string }
   | { name: string; label: string; kind: 'tags'; help?: string }
   | { name: string; label: string; kind: 'consent'; consequence: string; help?: string }
@@ -159,6 +163,23 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
       { name: 'body', label: 'Tekst', kind: 'textarea' },
       { name: 'ticks', label: 'Opsomming', kind: 'tags', help: 'De aangevinkte punten.' },
       { name: 'image', label: 'Afbeelding', kind: 'image' },
+      /* The press block on Media is a two-column text block with contact rows
+         on one side and a boilerplate quote on the other — the same layout
+         this type already models, so it carries those rather than a fourth
+         two-column type existing beside it. */
+      {
+        name: 'practical',
+        label: 'Gegevensregels',
+        kind: 'rows',
+        addLabel: 'Regel toevoegen',
+        columns: [
+          { name: 'label', label: 'Wat' },
+          { name: 'value', label: 'Waarde' }
+        ]
+      },
+      { name: 'asideRunning', label: 'Rechts — bovenschrift', kind: 'text' },
+      { name: 'quote', label: 'Rechts — citaat', kind: 'textarea' },
+      { name: 'cite', label: 'Rechts — bron', kind: 'text' },
       {
         name: 'layout',
         label: 'Beeldverhouding',
@@ -584,6 +605,121 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  /* The full-bleed showcase video on Media, with its glass caption and its
+     own sound toggle. cinema.js drives it through [data-cine]. */
+  cine: {
+    type: 'cine',
+    label: 'Showcasevideo',
+    blurb: 'Eén grote video over de volle breedte, met tekst eroverheen.',
+    summary: 'line',
+    fields: [
+      { name: 'webm', label: 'Video (WebM)', kind: 'video' },
+      { name: 'mp4', label: 'Video (MP4)', kind: 'video' },
+      { name: 'poster', label: 'Posterbeeld', kind: 'image' },
+      { name: 'alt', label: 'Omschrijving (screenreader)', kind: 'text' },
+      { name: 'kicker', label: 'Bovenschrift', kind: 'text' },
+      { name: 'line', label: 'Regel', kind: 'text' },
+      { name: 'note', label: 'Notitie', kind: 'text' }
+    ]
+  },
+
+  /* The grid of participant clips. Same people as the homepage reel, so the
+     same gate: without the tick this renders nothing. */
+  vcards: {
+    type: 'vcards',
+    label: 'Videokaarten',
+    blurb: 'Een raster met deelnemersclips. Toont pas iets als de toestemming is aangevinkt.',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      lead,
+      {
+        name: 'clips',
+        label: 'Clips',
+        kind: 'rows',
+        addLabel: 'Clip toevoegen',
+        columns: [
+          { name: 'webm', label: 'Video (WebM)', kind: 'video' },
+          { name: 'mp4', label: 'Video (MP4)', kind: 'video' },
+          { name: 'poster', label: 'Posterbeeld', kind: 'image' },
+          { name: 'alt', label: 'Omschrijving (screenreader)' },
+          { name: 'caption', label: 'Onderschrift' }
+        ]
+      },
+      {
+        name: 'consentOnFile',
+        label: 'Schriftelijke toestemming van de ouders is op dossier',
+        kind: 'consent',
+        consequence:
+          'Deze clips tonen minderjarige deelnemers. Zonder dit vinkje toont de sectie alleen de tekst en geen enkele clip.'
+      }
+    ]
+  },
+
+  /* The photo archive. lightbox.js finds it through [data-gallery] and opens
+     each shot from [data-shot-open]. */
+  mosaic: {
+    type: 'mosaic',
+    label: 'Beeldarchief',
+    blurb: "Een raster foto's dat vergroot opent.",
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      lead,
+      {
+        name: 'shots',
+        label: "Foto's",
+        kind: 'rows',
+        addLabel: 'Foto toevoegen',
+        columns: [
+          { name: 'image', label: 'Foto', kind: 'image' },
+          { name: 'caption', label: 'Onderschrift' },
+          { name: 'alt', label: 'Alt-tekst' }
+        ]
+      },
+      { name: 'note', label: 'Notitie onder het raster', kind: 'textarea' }
+    ]
+  },
+
+  /* The privacy and terms pages: a run of headed blocks down the left and a
+     short summary card on the right. The draft notice is a field rather than
+     fixed markup, so it can be removed the day the text is signed off without
+     touching the template. */
+  legal: {
+    type: 'legal',
+    label: 'Juridische tekst',
+    blurb: 'Genummerde tekstblokken met een samenvattingskaart ernaast.',
+    summary: 'draftNotice',
+    fields: [
+      {
+        name: 'draftNotice',
+        label: 'Waarschuwing bovenaan',
+        kind: 'textarea',
+        help: 'Laat leeg zodra de tekst juridisch bevestigd is; het kader verdwijnt dan.'
+      },
+      {
+        name: 'blocks',
+        label: 'Tekstblokken',
+        kind: 'rows',
+        addLabel: 'Blok toevoegen',
+        columns: [
+          { name: 'heading', label: 'Kop' },
+          { name: 'body', label: 'Tekst', kind: 'textarea' },
+          { name: 'ticks', label: 'Opsomming (één per regel)', kind: 'textarea' }
+        ]
+      },
+      { name: 'updated', label: 'Laatst bijgewerkt', kind: 'text' },
+      { name: 'asideRunning', label: 'Kaart — bovenschrift', kind: 'text' },
+      { name: 'asideHeading', label: 'Kaart — titel', kind: 'text' },
+      { name: 'asideTicks', label: 'Kaart — opsomming (één per regel)', kind: 'textarea' },
+      { name: 'asideNote', label: 'Kaart — slotregel', kind: 'textarea' }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -622,7 +758,11 @@ export const SECTION_ORDER: SectionType[] = [
   'reel',
   'founders',
   'team',
-  'form'
+  'form',
+  'cine',
+  'vcards',
+  'mosaic',
+  'legal'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {
