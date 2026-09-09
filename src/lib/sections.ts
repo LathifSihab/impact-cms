@@ -363,7 +363,8 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { value: 'layers', label: 'Lagen (niet klikbaar)' },
           { value: 'steps', label: 'Genummerde stappen' },
           { value: 'options', label: 'Mogelijkheden (geen nummers)' },
-          { value: 'format_rows', label: 'Formatrijen (eigen tekst)' }
+          { value: 'format_rows', label: 'Formatrijen (eigen tekst)' },
+          { value: 'contrib', label: 'Bijdragerijen' }
         ]
       },
       {

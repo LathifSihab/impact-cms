@@ -52,6 +52,11 @@ export interface CollectionItem {
 
 type Row = Record<string, any>;
 
+/* Foundation number -> name, filled before the maps run. A module-level cache
+   rather than a parameter on every map, because exactly one source needs it
+   and threading it through all ten would be noise. */
+const foundationNames = new Map<string, string>();
+
 /** How each content type flattens into the common shape. */
 const SOURCES: Record<
   string,
@@ -141,10 +146,27 @@ const SOURCES: Record<
   },
   experts: {
     table: 'experts',
-    select: 'id,name,org,bio,portrait',
+    select: 'id,name,org,bio,foundations,portrait',
     order: 'name',
     asc: true,
-    map: (r) => ({ id: r.id, title: r.name, subtitle: r.org, body: r.bio, image: r.portrait })
+    map: (r) => ({
+      id: r.id,
+      title: r.name,
+      subtitle: r.org,
+      body: r.bio,
+      image: r.portrait,
+      /* Which foundations this expert carries — stored as numbers, printed as
+         "[01] Self-knowledge". The names are looked up once per render and
+         passed in, so the card cannot drift from what the foundation is
+         actually called. */
+      tags: Array.isArray(r.foundations)
+        ? r.foundations.map((n: unknown) => {
+            const key = String(n);
+            const name = foundationNames.get(key);
+            return name ? `[${key}] ${name}` : `[${key}]`;
+          })
+        : []
+    })
   },
   events: {
     table: 'events',
@@ -202,6 +224,13 @@ export async function resolveCollections(
   const wanted = sections
     .map((s, index) => ({ s, index }))
     .filter(({ s }) => String(s.content?.source ?? '').trim() !== '');
+
+  /* The expert cards print the foundations they carry by name, so the lookup
+     is loaded once before the sources are read. */
+  if (wanted.some(({ s }) => String(s.content?.source ?? '') === 'experts')) {
+    const { data } = await db.from('foundations').select('number,name');
+    for (const row of (data ?? []) as Row[]) foundationNames.set(String(row.number), row.name);
+  }
 
   const entries = await Promise.all(
     wanted.map(async ({ s }) => {

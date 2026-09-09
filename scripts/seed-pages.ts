@@ -299,6 +299,7 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
       inner.includes('class="layers"') ||
       inner.includes('class="step-card"') ||
       inner.includes('class="opt"') ||
+      inner.includes('class="contrib-row"') ||
       (inner.includes('class="format-row"') && !formatRowsAreRecords)
     ) {
       const style = inner.includes('class="routes"')
@@ -309,22 +310,30 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
             ? 'steps'
             : inner.includes('class="format-row"')
               ? 'format_rows'
-              : 'options';
+              : inner.includes('class="contrib-row"')
+                ? 'contrib'
+                : 'options';
       const routes = style === 'routes';
       const cls = {
         routes: 'route',
         layers: 'layer',
         steps: 'step-card',
         options: 'opt',
-        format_rows: 'format-row'
+        format_rows: 'format-row',
+        contrib: 'contrib-row'
       }[style]!;
       /* Match the card's own closing tag, not any closing tag. A step card
          opens with <div class="n">01</div>, and a pattern that stopped at the
          first </div> captured the number and nothing else — which is why those
          cards came through with an empty title and body. */
-      const tag = { routes: 'a', layers: 'div', steps: 'article', options: 'article', format_rows: 'a' }[
-        style
-      ]!;
+      const tag = {
+        routes: 'a',
+        layers: 'div',
+        steps: 'article',
+        options: 'article',
+        format_rows: 'a',
+        contrib: 'div'
+      }[style]!;
       const re2 = new RegExp(`<${tag}[^>]*class="${cls}"[^>]*>([\\s\\S]*?)</${tag}>`, 'g');
       const items = [...inner.matchAll(re2)].map((row) => ({
         /* A format row's title is the styled name, which carries a <span
@@ -334,9 +343,13 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
           style === 'format_rows'
             ? (row[1].match(/<span class="name">([\s\S]*?)<\/span>/) ?? ['', ''])[1].trim()
             : first(row[1], /<h3[^>]*>([\s\S]*?)<\/h3>/),
-        body: first(row[1], /<p class="body[^"]*">([\s\S]*?)<\/p>/),
+        body:
+          first(row[1], /<p class="body[^"]*">([\s\S]*?)<\/p>/) ||
+          first(row[1], /<p>([\s\S]*?)<\/p>/),
         meta: style === 'format_rows' ? first(row[1], /<span class="m">([\s\S]*?)<\/span>/) : '',
-        ctaLabel: first(row[1], /<span class="tlink">([\s\S]*?)<\/span>/),
+        ctaLabel:
+          first(row[1], /<span class="tlink">([\s\S]*?)<\/span>/) ||
+          first(row[1], /<a[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/),
         ctaHref: localise((row[0].match(/<a[^>]*href="([^"]+)"/) ?? [])[1] ?? '')
       }));
       if (items.length) {

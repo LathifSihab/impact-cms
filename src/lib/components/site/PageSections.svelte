@@ -507,7 +507,8 @@
               <article class="expert">
                 <h4>{it.title}</h4>
                 {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
-                {#if it.body}<p class="r">{it.body}</p>{/if}
+                {#if it.body}<p class="body">{it.body}</p>{/if}
+                {#if it.tags?.length}<p class="r">{it.tags.join('  ')}</p>{/if}
               </article>
             {/each}
           </div>
@@ -653,15 +654,26 @@
         <div
           class={style === 'format_rows'
             ? undefined
-            : cards
-              ? str(c, 'grid') || 'cards-3'
-              : routes
-                ? 'routes'
-                : 'layers'}
+            : style === 'contrib'
+              ? undefined
+              : cards
+                ? str(c, 'grid') || 'cards-3'
+                : routes
+                  ? 'routes'
+                  : 'layers'}
         >
           {#each list(c, 'items') as item, i (item.title)}
             {@const n = String(i + 1).padStart(2, '0')}
-            {#if style === 'format_rows'}
+            {#if style === 'contrib'}
+            <div class="contrib-row">
+              <span class="n">{n}</span>
+              <h3>{item.title}</h3>
+              {#if item.body}<p>{item.body}</p>{/if}
+              {#if item.ctaLabel && item.ctaHref}
+                <a class="pill pill--ghost" href={item.ctaHref}>{item.ctaLabel}</a>
+              {/if}
+            </div>
+          {:else if style === 'format_rows'}
             <a class="format-row" href={item.ctaHref || '#'}>
               <span class="n">{n}</span>
               <span class="name">{@html item.title}</span>
@@ -892,6 +904,7 @@
                 <h4>{it.title}</h4>
                 {#if it.subtitle}<p class="org">{it.subtitle}</p>{/if}
                 {#if it.body}<p class="body">{it.body}</p>{/if}
+                {#if it.tags?.length}<p class="r">{it.tags.join('  ')}</p>{/if}
               </article>
             {/each}
           </div>
