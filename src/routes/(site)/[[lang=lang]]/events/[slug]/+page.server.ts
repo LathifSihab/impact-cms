@@ -29,7 +29,6 @@ export const load: PageServerLoad = async ({ params, locals, parent }) => {
        deployment that wants to post somewhere else — it used to be required,
        because the endpoint lived in the static site's repository. */
     subscribeEndpoint: env.PUBLIC_SUBSCRIBE_ENDPOINT || '/api/subscribe',
-    boxOffice: env.PUBLIC_TICKET_TAILOR_BOX_OFFICE ?? '',
-    staticBase: env.PUBLIC_STATIC_SITE_BASE ?? ''
+    boxOffice: env.PUBLIC_TICKET_TAILOR_BOX_OFFICE ?? ''
   };
 };

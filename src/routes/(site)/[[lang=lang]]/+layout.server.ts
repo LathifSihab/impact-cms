@@ -15,7 +15,6 @@ export const load: LayoutServerLoad = async ({ params, locals }) => {
      * still the static build, so the nav points at it rather than at dead
      * relative links.
      */
-    staticBase: env.PUBLIC_STATIC_SITE_BASE ?? '',
     slugs: await publishedSlugs(locals.supabase)
   };
 };

@@ -17,14 +17,12 @@
   let {
     locale,
     section = '',
-    staticBase = '',
     slugs = [],
     children
   }: {
     locale: Locale;
     /** Marks the current top-level nav item, as the static site's data-nav does. */
     section?: 'events' | 'journal' | '';
-    staticBase?: string;
     /** Pages this app serves. Anything else still belongs to the static build. */
     slugs?: string[];
     children: import('svelte').Snippet;
@@ -59,10 +57,11 @@
        take the /en prefix. It did, and the English brochure link 404'd. */
     if (file.startsWith('assets/')) return `/${file}`;
 
-    // Not served here: a page not configured yet.
-    const base = staticBase.replace(/\/$/, '');
+    /* A slug nobody has configured yet. It used to point at the static build;
+       that build is retired, so a link to a page that does not exist 404s here
+       honestly rather than reaching a site nobody maintains. */
     const prefix = locale === 'en' ? '/en' : '';
-    return base ? `${base}${prefix}/${file}` : `${prefix}/${file}`;
+    return `${prefix}/${file}`;
   });
 
   const nl = $derived(page.url.pathname.replace(/^\/en(?=\/|$)/, '') || '/');

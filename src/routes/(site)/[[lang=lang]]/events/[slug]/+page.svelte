@@ -22,10 +22,9 @@
   const p = $derived((rest: string) => path(data.locale, rest));
   const nl = $derived(data.locale === 'nl');
   const e = $derived(data.event);
-  const ext = $derived((f: string) => {
-    const base = (data.staticBase ?? '').replace(/\/$/, '');
-    return base ? `${base}${nl ? '' : '/en'}/${f}` : `/${f}`;
-  });
+  /* Assets are served here now that the static build is retired, and they carry
+     no locale prefix: there is no English copy of a PDF. */
+  const ext = (f: string) => `/${f}`;
 
   /* Chrome from the event-detail template, by anchor, each falling back to the
      string that used to be hardcoded so an unconfigured install still reads
