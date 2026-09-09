@@ -317,10 +317,14 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         options: 'opt',
         format_rows: 'format-row'
       }[style]!;
-      const re2 = new RegExp(
-        `<(?:a|div)[^>]*class="${cls}"[^>]*>([\\s\\S]*?)<\\/(?:a|div)>`,
-        'g'
-      );
+      /* Match the card's own closing tag, not any closing tag. A step card
+         opens with <div class="n">01</div>, and a pattern that stopped at the
+         first </div> captured the number and nothing else — which is why those
+         cards came through with an empty title and body. */
+      const tag = { routes: 'a', layers: 'div', steps: 'article', options: 'article', format_rows: 'a' }[
+        style
+      ]!;
+      const re2 = new RegExp(`<${tag}[^>]*class="${cls}"[^>]*>([\\s\\S]*?)</${tag}>`, 'g');
       const items = [...inner.matchAll(re2)].map((row) => ({
         /* A format row's title is the styled name, which carries a <span
            class="red"> the site colours. Keeping the markup is the only way to
@@ -345,6 +349,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
             headingStyle: headingStyleOf(inner),
             lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
             style,
+            grid: inner.includes('cards-4') ? 'cards-4' : 'cards-3',
             items
           }
         });

@@ -346,6 +346,15 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         ]
       },
       {
+        name: 'grid',
+        label: 'Kaarten per rij',
+        kind: 'select',
+        options: [
+          { value: 'cards-3', label: 'Drie' },
+          { value: 'cards-4', label: 'Vier' }
+        ]
+      },
+      {
         name: 'items',
         label: 'Blokken',
         kind: 'rows',

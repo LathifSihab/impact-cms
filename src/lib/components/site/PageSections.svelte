@@ -633,7 +633,16 @@
           </div>
         {/if}
         <!-- Steps and options are both .cards-3; only the numbering differs. -->
-        <div class={style === 'format_rows' ? undefined : cards ? 'cards-3' : routes ? 'routes' : 'layers'}>
+        <!-- Three or four across, as the page authored it. -->
+        <div
+          class={style === 'format_rows'
+            ? undefined
+            : cards
+              ? str(c, 'grid') || 'cards-3'
+              : routes
+                ? 'routes'
+                : 'layers'}
+        >
           {#each list(c, 'items') as item, i (item.title)}
             {@const n = String(i + 1).padStart(2, '0')}
             {#if style === 'format_rows'}
