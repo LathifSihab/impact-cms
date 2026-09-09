@@ -31,7 +31,12 @@
     untrack(() => (initial ?? []).map((row) => ({ ...blank(), ...row })))
   );
 
-  const template = $derived(`28px repeat(${columns.length}, minmax(0, 1fr)) 72px`);
+  /* Upload cells need real width; text cells can be narrower. Giving the
+     uploads a larger share stops four of them being squeezed into a quarter of
+     the row each. */
+  const track = (c: RowColumn) =>
+    c.kind === 'image' || c.kind === 'video' ? 'minmax(150px, 1fr)' : 'minmax(140px, 1.3fr)';
+  const template = $derived(`28px ${columns.map(track).join(' ')} 72px`);
 
   function add() {
     items = [...items, blank()];
@@ -69,6 +74,7 @@
               name="{name}__row__{i}__{col.name}"
               kind={col.kind === 'video' ? 'video' : 'image'}
               value={item[col.name] ?? ''}
+              compact
             />
           {:else if col.kind === 'textarea'}
             <textarea

@@ -19,6 +19,8 @@
     required = false,
     /** 'image' or 'video'. Video raises the ceiling and previews with <video>. */
     kind = 'image',
+    /** Stack the preview above the controls, for narrow cells in a row editor. */
+    compact = false,
     maxBytes
   }: {
     name: string;
@@ -26,6 +28,7 @@
     label?: string;
     required?: boolean;
     kind?: 'image' | 'video';
+    compact?: boolean;
     maxBytes?: number;
   } = $props();
 
@@ -107,7 +110,7 @@
 <input type="hidden" {name} value={cleared ? '' : stored} />
 {#if cleared}<input type="hidden" name="{name}__clear" value="1" />{/if}
 
-<div class="img">
+<div class="img" class:compact>
   <div class="img-preview" class:empty={!shown}>
     {#if shown && isVideo}
       <!-- muted so a preview never starts making noise in a backoffice -->
@@ -157,6 +160,7 @@
     display: flex;
     gap: 16px;
     align-items: flex-start;
+    min-width: 0;
   }
   .img-preview {
     width: 132px;
@@ -203,5 +207,28 @@
   /* the <label> is the button, so it needs the pointer the pill assumes */
   label.pill {
     cursor: pointer;
+  }
+
+  /* Inside a row editor the cell is a quarter of the page, far too narrow for a
+     fixed preview beside its buttons — the filename ended up wrapping one
+     character per line. Stack instead, and let the preview take the cell. */
+  .img.compact {
+    display: block;
+  }
+  .img.compact .img-preview {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+  .img.compact .img-controls {
+    gap: 6px;
+  }
+  .img.compact .img-controls .meta {
+    font-size: 11.5px;
+    line-height: 1.45;
+  }
+  .img.compact .pill {
+    height: 30px;
+    padding: 0 12px;
+    font-size: 11px;
   }
 </style>
