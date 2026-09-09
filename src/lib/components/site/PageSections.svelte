@@ -12,6 +12,7 @@
   import { renderMarkdown } from '$lib/markdown';
   import type { PageSection } from '$lib/pages';
   import type { CollectionItem } from '$lib/server/page-content';
+  import type { HTMLInputAttributes } from 'svelte/elements';
 
   let {
     sections,
@@ -31,6 +32,11 @@
   const groundClass = (g: string) => GROUND_CLASS[g] ?? 'section';
 
   const str = (c: Record<string, unknown>, k: string) => String(c[k] ?? '').trim();
+
+  /* autocomplete is a closed union in the DOM types and an open text field in
+     the editor, so it is narrowed once here rather than at each use. */
+  const autofill = (v: unknown): Pick<HTMLInputAttributes, 'autocomplete'> =>
+    v ? { autocomplete: String(v) as HTMLInputAttributes['autocomplete'] } : {};
 
   /* The section title's own class. The site sizes a heading to its length and
      sometimes pushes it right, and those modifiers are part of looking the
@@ -863,6 +869,102 @@
                 {#if it.body}<p class="body">{it.body}</p>{/if}
               </article>
             {/each}
+          </div>
+        {/if}
+      </div>
+    </section>
+
+  {:else if s.type === 'form'}
+    {@const twoColForm = str(c, 'layout') === 'two_col'}
+    {@const inputs = list(c, 'inputs')}
+    <!-- boxoffice.js finds this by [data-demo-form] and validates it in the
+         browser; the receiving function filters on the form's name. Both are
+         part of the contract, not decoration. -->
+    <section class={groundClass(s.ground)} id={s.anchor || undefined}>
+      <div class="wrap two-col" class:two-col--form={twoColForm}>
+        {#if twoColForm}
+          <div>
+            {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
+            {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
+            {#if str(c, 'intro')}<p class="intro">{str(c, 'intro')}</p>{/if}
+            {#if str(c, 'meta')}<p class="meta">{str(c, 'meta')}</p>{/if}
+          </div>
+        {/if}
+        <form
+          class="wl-card"
+          id="{s.anchor || 'form'}-{s.position}"
+          data-demo-form
+          novalidate
+          name={str(c, 'formName') || 'contact'}
+          action="/"
+          data-netlify="true"
+          {...{ 'netlify-honeypot': 'bot-field' }}
+        >
+          <input type="hidden" name="form-name" value={str(c, 'formName') || 'contact'} />
+          <input type="hidden" name="bot-field" />
+          {#if str(c, 'formRunning')}<span class="running">{str(c, 'formRunning')}</span>{/if}
+          {#if str(c, 'formHeading')}
+            <h2 style="margin-top:16px">{str(c, 'formHeading')}</h2>
+          {/if}
+          {#each inputs as field (field.name)}
+            {@const opts = String(field.options ?? '').split(/\r?\n/).map((o) => o.trim()).filter(Boolean)}
+            <div class="field">
+              <label for="{field.name}-{s.position}">{field.label}</label>
+              {#if opts.length}
+                <select id="{field.name}-{s.position}" name={field.name}>
+                  {#each opts as option (option)}<option>{option}</option>{/each}
+                </select>
+                <span class="err"></span>
+              {:else}
+                <input
+                  id="{field.name}-{s.position}"
+                  name={field.name}
+                  type={field.type || 'text'}
+                  {...autofill(field.autocomplete)}
+                />
+                <span class="err" role="alert"></span>
+              {/if}
+            </div>
+          {/each}
+          <button type="submit" class="pill pill--primary">
+            {str(c, 'submitLabel') || (nl ? 'Versturen' : 'Send')}
+          </button>
+          <p class="form-msg"></p>
+          {#if str(c, 'privacy') || str(c, 'privacyLinkLabel')}
+            <p class="form-privacy">
+              {str(c, 'privacy')}{#if str(c, 'privacyLinkLabel')}
+                <a href={str(c, 'privacyLinkHref') || (nl ? '/privacy' : '/en/privacy')}
+                  >{str(c, 'privacyLinkLabel')}</a
+                >
+              {/if}
+            </p>
+          {/if}
+        </form>
+
+        {#if str(c, 'asideRunning') || list(c, 'practical').length || list(c, 'shortcuts').length}
+          <div>
+            {#if str(c, 'asideRunning')}<span class="running">{str(c, 'asideRunning')}</span>{/if}
+            {#if list(c, 'practical').length}
+              <div class="practical" style="margin-top:22px">
+                {#each list(c, 'practical') as row (row.label)}
+                  <div class="row"><span>{row.label}</span><span>{row.value}</span></div>
+                {/each}
+              </div>
+            {/if}
+            {#if str(c, 'asideHeading')}
+              <h3 class="h" style="margin:44px 0 18px">{str(c, 'asideHeading')}</h3>
+            {/if}
+            {#if list(c, 'shortcuts').length}
+              <div class="dl-list">
+                {#each list(c, 'shortcuts') as row, i (row.title)}
+                  <a class="dl-row" href={row.href || '#'}>
+                    <span class="n">{String(i + 1).padStart(2, '0')}</span>
+                    <span class="t">{row.title}</span>
+                    <span class="m">{row.meta ?? ''}</span>
+                  </a>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/if}
       </div>

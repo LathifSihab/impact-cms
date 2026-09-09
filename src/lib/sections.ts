@@ -26,7 +26,8 @@ export type SectionType =
   | 'numbered_list'
   | 'reel'
   | 'founders'
-  | 'team';
+  | 'team'
+  | 'form';
 
 export type Ground = 'white' | 'sand' | 'black' | 'red';
 
@@ -494,6 +495,86 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  /* The contact and request forms. Both pages post the same shape — a
+     .wl-card with labelled fields, an error span per field and a privacy line
+     — so they are one type with a list of fields rather than two hand-built
+     blocks that would drift apart. The `name` is what the receiving function
+     keys off, so it is editable but explained. */
+  form: {
+    type: 'form',
+    label: 'Formulier',
+    blurb: 'Het contact- of aanvraagformulier, met de velden die het verstuurt.',
+    summary: 'heading',
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      { name: 'intro', label: 'Intro naast het formulier', kind: 'textarea' },
+      { name: 'meta', label: 'Kleine tekst naast het formulier', kind: 'textarea' },
+      {
+        name: 'layout',
+        label: 'Weergave',
+        kind: 'select',
+        options: [
+          { value: 'plain', label: 'Alleen het formulier' },
+          { value: 'two_col', label: 'Tekst naast het formulier' }
+        ]
+      },
+      {
+        name: 'formName',
+        label: 'Naam van het formulier',
+        kind: 'text',
+        help: 'Waarop de ontvangende functie filtert — verander dit niet zonder die mee te veranderen.'
+      },
+      { name: 'formHeading', label: 'Kop in het formulier', kind: 'text' },
+      { name: 'formRunning', label: 'Bovenschrift in het formulier', kind: 'text' },
+      {
+        name: 'inputs',
+        label: 'Velden',
+        kind: 'rows',
+        addLabel: 'Veld toevoegen',
+        columns: [
+          { name: 'name', label: 'Naam' },
+          { name: 'label', label: 'Label' },
+          { name: 'type', label: 'Soort', kind: 'text' },
+          { name: 'autocomplete', label: 'Autocomplete' },
+          { name: 'options', label: 'Keuzes (één per regel)', kind: 'textarea' }
+        ]
+      },
+      { name: 'submitLabel', label: 'Knoptekst', kind: 'text' },
+      { name: 'privacy', label: 'Privacyregel', kind: 'textarea' },
+      { name: 'privacyLinkLabel', label: 'Privacylink — tekst', kind: 'text' },
+      { name: 'privacyLinkHref', label: 'Privacylink — link', kind: 'text' },
+      /* Contact puts its direct details and a set of shortcuts beside the
+         form, in the same section. They live here rather than in a section of
+         their own, because a second section would put a full section's padding
+         between a form and the details that belong next to it. */
+      { name: 'asideRunning', label: 'Naast het formulier — bovenschrift', kind: 'text' },
+      {
+        name: 'practical',
+        label: 'Naast het formulier — gegevens',
+        kind: 'rows',
+        addLabel: 'Regel toevoegen',
+        columns: [
+          { name: 'label', label: 'Wat' },
+          { name: 'value', label: 'Waarde' }
+        ]
+      },
+      { name: 'asideHeading', label: 'Naast het formulier — kop', kind: 'text' },
+      {
+        name: 'shortcuts',
+        label: 'Naast het formulier — snelkoppelingen',
+        kind: 'rows',
+        addLabel: 'Snelkoppeling toevoegen',
+        columns: [
+          { name: 'title', label: 'Tekst' },
+          { name: 'meta', label: 'Rechts' },
+          { name: 'href', label: 'Link' }
+        ]
+      }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -531,7 +612,8 @@ export const SECTION_ORDER: SectionType[] = [
   'numbered_list',
   'reel',
   'founders',
-  'team'
+  'team',
+  'form'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {

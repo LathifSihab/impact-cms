@@ -244,7 +244,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     /* The newsletter form, in either of the two layouts the site uses: the
        narrow band most pages end on, and the two-column block where the copy
        sits beside the field. Both are the same section type. */
-    if (attrs.includes('news-band') || inner.includes('two-col--form')) {
+    if (attrs.includes('news-band') || (inner.includes('two-col--form') && inner.includes('data-newsletter'))) {
       sections.push({
         type: 'news_band',
         ground: 'white',
@@ -437,6 +437,68 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           // Never seeded on. The consent for these clips is not held, and the
           // seed is not the place to assert that it is.
           consentOnFile: ''
+        }
+      });
+      continue;
+    }
+
+    /* The contact and request forms. Both pages post the same .wl-card shape,
+       so one type carries them, with the fields as rows. */
+    if (inner.includes('class="wl-card"') && inner.includes('<form')) {
+      const form = inner.match(/<form[^>]*class="wl-card"[^>]*>([\s\S]*?)<\/form>/);
+      const formTag = inner.match(/<form[^>]*class="wl-card"[^>]*>/);
+      const body = form ? form[1] : '';
+      const beside = inner.slice(0, inner.indexOf('<form'));
+      const after = inner.slice(inner.indexOf('</form>'));
+
+      const inputs = [...body.matchAll(/<div class="field">([\s\S]*?)<\/div>/g)].map((f) => {
+        const block = f[1];
+        const select = block.match(/<select[^>]*name="([^"]*)"[^>]*>([\s\S]*?)<\/select>/);
+        const input = block.match(/<input[^>]*name="([^"]*)"[^>]*>/);
+        const options = select
+          ? [...select[2].matchAll(/<option[^>]*>([\s\S]*?)<\/option>/g)].map((o) => decode(o[1])).join('\n')
+          : '';
+        return {
+          name: select ? select[1] : ((input?.[0].match(/name="([^"]*)"/) ?? [])[1] ?? ''),
+          label: first(block, /<label[^>]*>([\s\S]*?)<\/label>/),
+          type: select ? 'select' : ((input?.[0].match(/type="([^"]*)"/) ?? [])[1] ?? 'text'),
+          autocomplete: (input?.[0].match(/autocomplete="([^"]*)"/) ?? [])[1] ?? '',
+          options
+        };
+      });
+
+      const privacy = body.match(/<p class="form-privacy">([\s\S]*?)<\/p>/);
+      const privacyLink = privacy ? privacy[1].match(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/) : null;
+
+      sections.push({
+        type: 'form',
+        ground,
+        anchor,
+        content: {
+          running: first(beside, /<span class="running">([\s\S]*?)<\/span>/),
+          heading: first(beside, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(beside),
+          intro: first(beside, /<p class="intro">([\s\S]*?)<\/p>/),
+          meta: first(beside, /<p class="meta">([\s\S]*?)<\/p>/),
+          layout: inner.includes('two-col--form') ? 'two_col' : 'plain',
+          formName: formTag ? ((formTag[0].match(/name="([^"]*)"/) ?? [])[1] ?? '') : '',
+          formRunning: first(body, /<span class="running">([\s\S]*?)<\/span>/),
+          formHeading: first(body, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          inputs,
+          submitLabel: first(body, /<button[^>]*>([\s\S]*?)<\/button>/),
+          privacy: privacy ? decode(privacy[1].replace(/<a[\s\S]*?<\/a>/, '')).trim() : '',
+          privacyLinkLabel: privacyLink ? decode(privacyLink[2]) : '',
+          privacyLinkHref: privacyLink ? localise(privacyLink[1]) : '',
+          asideRunning: first(after, /<span class="running">([\s\S]*?)<\/span>/),
+          practical: [...after.matchAll(/<div class="row"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g)].map(
+            (r) => ({ label: decode(r[1]), value: decode(r[2]) })
+          ),
+          asideHeading: first(after, /<h3 class="h"[^>]*>([\s\S]*?)<\/h3>/),
+          shortcuts: [...after.matchAll(/<a class="dl-row" href="([^"]*)">([\s\S]*?)<\/a>/g)].map((r) => ({
+            title: first(r[2], /<span class="t">([\s\S]*?)<\/span>/),
+            meta: first(r[2], /<span class="m">([\s\S]*?)<\/span>/),
+            href: localise(r[1])
+          }))
         }
       });
       continue;
