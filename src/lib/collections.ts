@@ -36,8 +36,8 @@ export type CollectionKey =
 export interface RowColumn {
   name: string;
   label: string;
-  /** 'image' turns the cell into an upload control; the stored value is a path. */
-  kind?: 'text' | 'textarea' | 'image';
+  /** 'image' and 'video' turn the cell into an upload; the stored value is a path. */
+  kind?: 'text' | 'textarea' | 'image' | 'video';
   placeholder?: string;
 }
 

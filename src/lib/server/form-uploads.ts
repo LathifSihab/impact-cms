@@ -83,9 +83,10 @@ export async function applyUploads(
     let touched = false;
     for (let i = 0; i < rows.length; i++) {
       for (const col of imageCols) {
-        // ImageInput is mounted as `<field>__row__<i>`, so its file and clear
-        // inputs are that name plus the usual suffixes.
-        const base = `${field.name}__row__${i}`;
+        // ImageInput is mounted as `<field>__row__<i>__<column>`, so its file
+        // and clear inputs are that name plus the usual suffixes. The column is
+        // in the name because a row can hold more than one upload.
+        const base = `${field.name}__row__${i}__${col.name}`;
         const file = asFile(form.get(`${base}__file`));
         const cleared = form.get(`${base}__clear`) != null;
         const previous = String(rows[i]?.[col.name] ?? '');

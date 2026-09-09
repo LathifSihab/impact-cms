@@ -246,6 +246,14 @@ belonging to a record is on that record's screen — the format images under
 Inhoud → Formats, the foundation images under Fundamenten — while a page's hero
 and its section images are under Pagina's.
 
+Video is allowed too — WebM and MP4, for the reel's clips — with its own
+ceiling (64 MB against 8 MB for images), because a clip is an order of magnitude
+larger than a photo and one number would be wrong for one of them. Type is still
+decided by magic number: EBML for WebM, an ftyp box for MP4.
+
+A repeatable row can hold uploads, and more than one: a reel clip is an MP4, an
+optional WebM and a poster image, each with its own preview.
+
 ### Three things here that were decided, not defaulted
 
 **Not `static/`.** That directory is copied into the build output when the

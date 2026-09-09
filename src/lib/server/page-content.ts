@@ -19,6 +19,8 @@ export interface CollectionItem {
   title: string;
   subtitle?: string;
   body?: string;
+  /** A longer alternative, where a presentation wants more than the one-liner. */
+  bodyLong?: string;
   image?: string;
   href?: string;
 }
@@ -35,7 +37,14 @@ const SOURCES: Record<
     select: 'id,number,name,en_one_liner,nl_body,image',
     order: 'number',
     asc: true,
-    map: (r) => ({ id: r.id, number: r.number, title: r.name, body: r.en_one_liner, image: r.image })
+    map: (r) => ({
+      id: r.id,
+      number: r.number,
+      title: r.name,
+      body: r.en_one_liner,
+      bodyLong: r.nl_body,
+      image: r.image
+    })
   },
   formats: {
     table: 'formats',

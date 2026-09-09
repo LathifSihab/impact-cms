@@ -62,10 +62,14 @@
       {#each columns as col (col.name)}
         <div class="field">
           <label for="{name}-{i}-{col.name}">{col.label}</label>
-          {#if col.kind === 'image'}
+          {#if col.kind === 'image' || col.kind === 'video'}
             <!-- The row's own value stays in the JSON payload; the file posts
                  under the index the server expects. -->
-            <ImageInput name="{name}__row__{i}" value={item[col.name] ?? ''} />
+            <ImageInput
+              name="{name}__row__{i}__{col.name}"
+              kind={col.kind === 'video' ? 'video' : 'image'}
+              value={item[col.name] ?? ''}
+            />
           {:else if col.kind === 'textarea'}
             <textarea
               id="{name}-{i}-{col.name}"

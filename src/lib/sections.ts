@@ -46,7 +46,7 @@ export type SectionField =
       label: string;
       kind: 'rows';
       addLabel: string;
-      columns: { name: string; label: string; kind?: 'text' | 'textarea' | 'image' }[];
+      columns: { name: string; label: string; kind?: 'text' | 'textarea' | 'image' | 'video' }[];
       help?: string;
     };
 
@@ -303,9 +303,9 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         kind: 'rows',
         addLabel: 'Clip toevoegen',
         columns: [
-          { name: 'webm', label: 'WebM-pad' },
-          { name: 'mp4', label: 'MP4-pad' },
-          { name: 'poster', label: 'Poster' },
+          { name: 'mp4', label: 'Video (MP4)', kind: 'video' },
+          { name: 'webm', label: 'Video (WebM, optioneel)', kind: 'video' },
+          { name: 'poster', label: 'Posterbeeld', kind: 'image' },
           { name: 'caption', label: 'Onderschrift', kind: 'textarea' }
         ]
       },

@@ -79,17 +79,51 @@ export async function parseSections(
       }
 
       if (field.kind === 'rows') {
-        const rows = parseJson(form.get(`${base}__rows`), []);
-        content[field.name] = Array.isArray(rows)
-          ? rows
-              .map((r) => {
-                const src = (r ?? {}) as Record<string, unknown>;
-                const out: Record<string, string> = {};
-                for (const col of field.columns) out[col.name] = String(src[col.name] ?? '').trim();
-                return out;
-              })
-              .filter((r) => Object.values(r).some(Boolean))
-          : [];
+        const raw = parseJson(form.get(`${base}__rows`), []);
+        const rows = Array.isArray(raw) ? raw : [];
+        const out: Record<string, string>[] = [];
+
+        for (let r = 0; r < rows.length; r++) {
+          const src = (rows[r] ?? {}) as Record<string, unknown>;
+          const row: Record<string, string> = {};
+
+          for (const col of field.columns) {
+            const current = String(src[col.name] ?? '').trim();
+
+            if (col.kind !== 'image' && col.kind !== 'video') {
+              row[col.name] = current;
+              continue;
+            }
+
+            /* A cell that is an upload posts outside the JSON, under the row
+               editor's own name. The reel's clips are the reason: a video
+               cannot travel inside a JSON string. */
+            const cellBase = `${base}__rows__row__${r}__${col.name}`;
+            const file = asFile(form.get(`${cellBase}__file`));
+            const cleared = form.get(`${cellBase}__clear`) != null;
+
+            if (file) {
+              try {
+                const saved = await save('pages', pageId, `${field.name}-${r}-${col.name}`, file);
+                row[col.name] = saved.path;
+                if (current && current !== saved.path && isManaged(current)) orphaned.push(current);
+              } catch (e) {
+                errors[`sections.${i}.${field.name}`] =
+                  e instanceof UploadError ? e.message : 'Uploaden is niet gelukt.';
+                row[col.name] = current;
+              }
+            } else if (cleared) {
+              row[col.name] = '';
+              if (current && isManaged(current)) orphaned.push(current);
+            } else {
+              row[col.name] = current;
+            }
+          }
+
+          if (Object.values(row).some(Boolean)) out.push(row);
+        }
+
+        content[field.name] = out;
         continue;
       }
 

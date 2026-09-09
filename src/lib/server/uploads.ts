@@ -47,10 +47,18 @@ const ALLOWED: Record<string, string> = {
   'image/png': '.png',
   'image/webp': '.webp',
   'image/avif': '.avif',
-  'image/gif': '.gif'
+  'image/gif': '.gif',
+  'video/webm': '.webm',
+  'video/mp4': '.mp4'
 };
 
+const IS_VIDEO = (type: string) => type.startsWith('video/');
+
+/* Video is allowed for the participant reel, and a clip is an order of
+   magnitude larger than a photo, so the ceiling depends on what was uploaded
+   rather than being one number that is wrong for one of them. */
 export const MAX_BYTES = Number(env.UPLOAD_MAX_BYTES ?? 8 * 1024 * 1024);
+export const MAX_VIDEO_BYTES = Number(env.UPLOAD_MAX_VIDEO_BYTES ?? 64 * 1024 * 1024);
 
 export class UploadError extends Error {}
 
@@ -64,10 +72,14 @@ function sniff(bytes: Uint8Array): string | null {
   const riff = String.fromCharCode(b[0], b[1], b[2], b[3]);
   const webp = String.fromCharCode(b[8], b[9], b[10], b[11]);
   if (riff === 'RIFF' && webp === 'WEBP') return 'image/webp';
+  // Matroska/WebM starts with the EBML magic.
+  if (b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return 'video/webm';
   // AVIF: 'ftyp' at offset 4, brand at 8
   const ftyp = String.fromCharCode(b[4], b[5], b[6], b[7]);
   const brand = String.fromCharCode(b[8], b[9], b[10], b[11]);
   if (ftyp === 'ftyp' && (brand === 'avif' || brand === 'avis')) return 'image/avif';
+  // Every other ftyp brand here is an MP4 family container: isom, mp42, iso5…
+  if (ftyp === 'ftyp') return 'video/mp4';
   return null;
 }
 
@@ -108,14 +120,16 @@ export async function save(
   file: File
 ): Promise<SavedFile> {
   if (file.size === 0) throw new UploadError('Het bestand is leeg.');
-  if (file.size > MAX_BYTES) {
-    throw new UploadError(`Maximaal ${Math.floor(MAX_BYTES / (1024 * 1024))} MB.`);
-  }
 
   const buffer = new Uint8Array(await file.arrayBuffer());
   const detected = sniff(buffer);
   if (!detected || !ALLOWED[detected]) {
-    throw new UploadError('Alleen JPG, PNG, WebP, AVIF of GIF.');
+    throw new UploadError('Alleen JPG, PNG, WebP, AVIF, GIF, WebM of MP4.');
+  }
+
+  const ceiling = IS_VIDEO(detected) ? MAX_VIDEO_BYTES : MAX_BYTES;
+  if (file.size > ceiling) {
+    throw new UploadError(`Maximaal ${Math.floor(ceiling / (1024 * 1024))} MB voor dit bestandstype.`);
   }
 
   const dir = join(UPLOAD_DIR, safeSegment(collection), safeSegment(recordId));

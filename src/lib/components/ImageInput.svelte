@@ -17,14 +17,24 @@
     value = '',
     label,
     required = false,
-    maxBytes = 8 * 1024 * 1024
+    /** 'image' or 'video'. Video raises the ceiling and previews with <video>. */
+    kind = 'image',
+    maxBytes
   }: {
     name: string;
     value?: string;
     label?: string;
     required?: boolean;
+    kind?: 'image' | 'video';
     maxBytes?: number;
   } = $props();
+
+  const isVideo = $derived(kind === 'video');
+  const ceiling = $derived(maxBytes ?? (isVideo ? 64 * 1024 * 1024 : 8 * 1024 * 1024));
+  const accept = $derived(
+    isVideo ? 'video/webm,video/mp4' : 'image/jpeg,image/png,image/webp,image/avif,image/gif'
+  );
+  const typeRule = $derived(isVideo ? /^video\/(webm|mp4)$/ : /^image\/(jpeg|png|webp|avif|gif)$/);
 
   let stored = $state(untrack(() => value ?? ''));
   let chosen = $state<File | null>(null);
@@ -67,13 +77,13 @@
     chosen = null;
 
     if (!file) return;
-    if (file.size > maxBytes) {
-      localError = `Maximaal ${Math.floor(maxBytes / (1024 * 1024))} MB.`;
+    if (file.size > ceiling) {
+      localError = `Maximaal ${Math.floor(ceiling / (1024 * 1024))} MB.`;
       if (input) input.value = '';
       return;
     }
-    if (!/^image\/(jpeg|png|webp|avif|gif)$/.test(file.type)) {
-      localError = 'Alleen JPG, PNG, WebP, AVIF of GIF.';
+    if (!typeRule.test(file.type)) {
+      localError = isVideo ? 'Alleen WebM of MP4.' : 'Alleen JPG, PNG, WebP, AVIF of GIF.';
       if (input) input.value = '';
       return;
     }
@@ -99,10 +109,13 @@
 
 <div class="img">
   <div class="img-preview" class:empty={!shown}>
-    {#if shown}
+    {#if shown && isVideo}
+      <!-- muted so a preview never starts making noise in a backoffice -->
+      <video src={shown} muted playsinline preload="metadata"></video>
+    {:else if shown}
       <img src={shown} alt="" />
     {:else}
-      <span class="meta">Geen afbeelding</span>
+      <span class="meta">{isVideo ? 'Geen video' : 'Geen afbeelding'}</span>
     {/if}
   </div>
 
@@ -111,14 +124,14 @@
       bind:this={input}
       type="file"
       name="{name}__file"
-      accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+      {accept}
       onchange={onPick}
       id="up-{name}"
       class="visually-hidden"
       {required}
     />
     <label class="pill pill--quiet pill--sm" for="up-{name}">
-      {shown ? 'Vervangen' : 'Afbeelding kiezen'}
+      {shown ? 'Vervangen' : isVideo ? 'Video kiezen' : 'Afbeelding kiezen'}
     </label>
 
     {#if shown}
@@ -155,7 +168,8 @@
     place-items: center;
     overflow: hidden;
   }
-  .img-preview img {
+  .img-preview img,
+  .img-preview video {
     width: 100%;
     height: 100%;
     object-fit: cover;

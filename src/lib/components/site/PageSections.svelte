@@ -230,13 +230,19 @@
         {:else if how(c) === 'strip'}
           <!-- The horizontal strip on the homepage. main.js drives the arrows
                through data-strip-*, so reproducing the attributes is enough. -->
-          <div class="strip" data-strip>
+          <!-- The static markup: a picture with the numbered chip over it, and
+               the Dutch body underneath. fund-track is what main.js scrolls. -->
+          <div class="strip fund-track" role="region" aria-label={str(c, 'heading')}>
             {#each items as it (it.id)}
-              <div class="strip-card">
-                {#if it.number}<span class="n">{it.number}</span>{/if}
-                <h3>{it.title}</h3>
-                {#if it.body}<p class="body">{it.body}</p>{/if}
-              </div>
+              <article class="strip-card">
+                <div class="strip-img">
+                  {#if it.image}
+                    <img src={imageUrl(it.image)} alt={it.title} loading="lazy" />
+                  {/if}
+                  <span class="chip">[{it.number ?? ''}] {it.title}</span>
+                </div>
+                {#if it.bodyLong || it.body}<p class="body">{it.bodyLong || it.body}</p>{/if}
+              </article>
             {/each}
           </div>
         {:else if how(c) === 'fund_long'}
