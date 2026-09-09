@@ -31,6 +31,22 @@
     untrack(() => (initial ?? []).map((row) => ({ ...blank(), ...row })))
   );
 
+
+  /* Adopt a changed `initial`.
+   *
+   * The state is seeded once so the editor owns the array while someone is
+   * typing in it. But the same component instance can legitimately be handed a
+   * different section's data — and silently keeping the old rows is how a
+   * section's content ends up written onto its neighbour. Compare by value:
+   * re-seeding on identity alone would wipe edits on every parent re-render. */
+  let seen = $state(untrack(() => JSON.stringify(initial ?? [])));
+  $effect(() => {
+    const incoming = JSON.stringify(initial ?? []);
+    if (incoming === seen) return;
+    seen = incoming;
+    items = (initial ?? []).map((row) => ({ ...blank(), ...row }));
+  });
+
   /* Upload cells need real width; text cells can be narrower. Giving the
      uploads a larger share stops four of them being squeezed into a quarter of
      the row each. */

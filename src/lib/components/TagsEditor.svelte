@@ -8,6 +8,22 @@
   }: { name: string; initial?: string[]; placeholder?: string } = $props();
 
   let items = $state<string[]>(untrack(() => [...(initial ?? [])]));
+
+  /* Adopt a changed `initial`.
+   *
+   * The state is seeded once so the editor owns the array while someone is
+   * typing in it. But the same component instance can legitimately be handed a
+   * different section's data — and silently keeping the old rows is how a
+   * section's content ends up written onto its neighbour. Compare by value:
+   * re-seeding on identity alone would wipe edits on every parent re-render. */
+  let seen = $state(untrack(() => JSON.stringify(initial ?? [])));
+  $effect(() => {
+    const incoming = JSON.stringify(initial ?? []);
+    if (incoming === seen) return;
+    seen = incoming;
+    items = [...(initial ?? [])];
+  });
+
   let draft = $state('');
 
   function add() {

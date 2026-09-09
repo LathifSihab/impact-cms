@@ -13,6 +13,10 @@
   import { page } from '$app/state';
   import type { Locale } from '$lib/collections';
   import { path } from '$lib/i18n';
+  import { env } from '$env/dynamic/public';
+
+  const plausibleDomain = env.PUBLIC_PLAUSIBLE_DOMAIN ?? '';
+  const plausibleSrc = env.PUBLIC_PLAUSIBLE_SRC ?? '';
 
   let {
     locale,
@@ -122,6 +126,15 @@
 
 <svelte:head>
   <link rel="stylesheet" href="/assets/css/style.css" />
+  {#if plausibleDomain}
+    <!-- analytics.js reads these and does nothing without them, so the account
+         turning up is a variable change rather than a code change. It still
+         waits for the Statistics category in the consent banner: loading
+         analytics after someone chose "Necessary only" would make the banner a
+         lie. -->
+    <meta name="plausible-domain" content={plausibleDomain} />
+    {#if plausibleSrc}<meta name="plausible-src" content={plausibleSrc} />{/if}
+  {/if}
 </svelte:head>
 
 <!-- The kinetic preloader: EXPERIENCES / CONNECTION / GROWTH, landing on

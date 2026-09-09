@@ -29,7 +29,16 @@
    * defines.
    */
   onMount(() => {
-    const sources = ['/assets/js/consent.js', '/assets/js/main.js', '/assets/js/boxoffice.js'];
+    /* analytics.js sits between consent.js and main.js on purpose: it installs
+       the plausible() queue, so goals main.js fires before the visitor answers
+       the banner are held rather than dropped. It does nothing at all without
+       the meta tag the shell writes. */
+    const sources = [
+      '/assets/js/consent.js',
+      '/assets/js/analytics.js',
+      '/assets/js/main.js',
+      '/assets/js/boxoffice.js'
+    ];
 
     /* The reveal CSS hides [data-reveal] until main.js marks it visible, so
        anything that stops main.js would leave the page blank rather than

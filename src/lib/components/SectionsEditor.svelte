@@ -31,15 +31,24 @@
   }: { name?: string; initial?: PageSection[] } = $props();
 
   type Draft = {
+    /* A stable identity, so the {#each} can be keyed by the section rather than
+       by its position. Keyed by index, Svelte reuses a component when the list
+       is reordered and only swaps its props — and the row and tag editors seed
+       their state from props once, so they kept the previous section's rows and
+       wrote them back on save. That is how a reel lost its clips. */
+    key: number;
     type: SectionType;
     ground: string;
     anchor: string;
     content: Record<string, any>;
   };
 
+  let nextKey = 0;
+
   let items = $state<Draft[]>(
     untrack(() =>
       (initial ?? []).map((s) => ({
+        key: nextKey++,
         type: s.type,
         ground: s.ground ?? 'white',
         anchor: s.anchor ?? '',
@@ -52,7 +61,10 @@
   let adding = $state(false);
 
   function add(type: SectionType) {
-    items = [...items, { type, ground: 'white', anchor: '', content: emptySectionContent(type) }];
+    items = [
+      ...items,
+      { key: nextKey++, type, ground: 'white', anchor: '', content: emptySectionContent(type) }
+    ];
     open = items.length - 1;
     adding = false;
   }
@@ -77,7 +89,7 @@
     <p class="rep-empty">Deze pagina heeft nog geen secties.</p>
   {/if}
 
-  {#each items as item, i (i)}
+  {#each items as item, i (item.key)}
     {@const def = SECTIONS[item.type]}
     <div class="sec-item" class:is-open={open === i}>
       <div class="sec-head-row">
