@@ -170,6 +170,56 @@ for (const key of NAV_ORDER) {
   }
 }
 
+/* --- pages -----------------------------------------------------------------
+ *
+ * Pages are not in the collection registry — they have their own table and
+ * their own editor — but their hero images and the images inside media_text
+ * sections carry the same legacy paths and would otherwise be the one corner
+ * left rendering blanks.
+ */
+{
+  const { data: pages, error } = await db.from('pages').select('id, locale, hero_image');
+  if (error) {
+    console.error(`  pages: ${error.message}`);
+  } else {
+    for (const row of (pages ?? []) as Record<string, any>[]) {
+      const key = `${row.id}-${row.locale}`;
+      const next = await migrateValue('pages', key, 'hero', String(row.hero_image ?? ''));
+      if (next && !dryRun) {
+        const { error: upErr } = await db
+          .from('pages')
+          .update({ hero_image: next })
+          .eq('id', row.id)
+          .eq('locale', row.locale);
+        if (upErr) console.error(`  pages/${key}: ${upErr.message}`);
+      }
+    }
+  }
+
+  const { data: sections, error: secErr } = await db
+    .from('page_sections')
+    .select('id, page_id, locale, position, content');
+  if (secErr) {
+    console.error(`  page_sections: ${secErr.message}`);
+  } else {
+    for (const row of (sections ?? []) as Record<string, any>[]) {
+      const content = (row.content ?? {}) as Record<string, unknown>;
+      const stored = String(content.image ?? '');
+      if (!stored) continue;
+
+      const key = `${row.page_id}-${row.locale}`;
+      const next = await migrateValue('pages', key, `section-${row.position}-image`, stored);
+      if (next && !dryRun) {
+        const { error: upErr } = await db
+          .from('page_sections')
+          .update({ content: { ...content, image: next } })
+          .eq('id', row.id);
+        if (upErr) console.error(`  page_sections/${row.id}: ${upErr.message}`);
+      }
+    }
+  }
+}
+
 console.log(`\n${copied} gekopieerd, ${skipped} al in orde, ${missing.length} niet gevonden.`);
 
 if (missing.length) {

@@ -229,14 +229,22 @@ browser sent, which removes collisions, other people's spelling, and the usual
 route for a traversal.
 
 `npm run images:migrate` moves the seeded `assets/...` paths into that layout and
-rewrites the columns. It is idempotent. The photography is not in the handoff, so
-27 of the 36 references have no file to copy — those are listed and left
-untouched rather than blanked. Point it at the original repo to finish:
+rewrites the columns — the ten content types, the page heroes and the images
+inside page sections. It is idempotent, and it reports anything it cannot find
+rather than blanking the value.
+
+The photography is not in this repo. Point `--source` at wherever it lives; once
+`site/assets/img` is populated the migration completes with nothing missing:
 
 ```bash
-npm run images:migrate -- --source /path/to/original/site/assets
+npm run images:migrate -- --source ../site/assets
 npm run images:migrate -- --dry-run          # report only
 ```
+
+**Where an image is configured** follows the same rule as the copy: an image
+belonging to a record is on that record's screen — the format images under
+Inhoud → Formats, the foundation images under Fundamenten — while a page's hero
+and its section images are under Pagina's.
 
 ### Three things here that were decided, not defaulted
 
