@@ -231,7 +231,9 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { value: 'event_rows', label: 'Eventrijen' },
           { value: 'journal_cards', label: 'Journalkaarten' },
           { value: 'logos', label: 'Logowand' },
+          { value: 'logo_grid', label: 'Logoraster' },
           { value: 'marquee', label: 'Lopende logoband' },
+          { value: 'tier_table', label: 'Partnershiptabel' },
           { value: 'stats', label: 'Cijfers' }
         ],
         help: 'Hoe de records eruitzien. Laat op standaard als je twijfelt.'
@@ -336,7 +338,10 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         kind: 'select',
         options: [
           { value: 'routes', label: 'Routes (klikbaar)' },
-          { value: 'layers', label: 'Lagen (niet klikbaar)' }
+          { value: 'layers', label: 'Lagen (niet klikbaar)' },
+          { value: 'steps', label: 'Genummerde stappen' },
+          { value: 'options', label: 'Mogelijkheden (geen nummers)' },
+          { value: 'format_rows', label: 'Formatrijen (eigen tekst)' }
         ]
       },
       {
@@ -347,6 +352,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         columns: [
           { name: 'title', label: 'Titel' },
           { name: 'body', label: 'Tekst', kind: 'textarea' },
+          { name: 'meta', label: 'Rechts' },
           { name: 'ctaLabel', label: 'Linktekst' },
           { name: 'ctaHref', label: 'Link' }
         ]

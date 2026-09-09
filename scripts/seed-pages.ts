@@ -50,6 +50,13 @@ if (!url || !serviceKey) {
   process.exit(1);
 }
 
+/* The bracketed names of the real formats — [Camps], [Days], … — read once.
+   Three pages use .format-row markup, but only two of them are listing formats:
+   Samenwerken hand-writes five rows of its own ("Partner [worden]") in exactly
+   the same shape. Comparing the names is what tells them apart, rather than
+   hardcoding which page is which. */
+let FORMAT_NAMES: string[] = [];
+
 const SITE = process.env.IMPACT_SITE_DIR
   ? resolve(process.env.IMPACT_SITE_DIR)
   : resolve(root, '..', 'site');
@@ -273,18 +280,59 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     /* The numbered blocks appear twice on the site with different styling:
        .routes on the homepage and .layers on Over. One section type, one
        switch, rather than two types that would drift apart. */
-    if (inner.includes('class="routes"') || inner.includes('class="layers"')) {
-      const routes = inner.includes('class="routes"');
-      const cls = routes ? 'route' : 'layer';
+    /* Three pages use .format-row markup, but only two of them are listing
+       formats — Samenwerken hand-writes five rows of its own ("Partner
+       [worden]") in exactly the same shape. Comparing the names against the
+       real records is what tells them apart, rather than hardcoding pages. */
+    const rowNames = [...inner.matchAll(/<span class="name">([\s\S]*?)<\/span>/g)].map((x) =>
+      decode(x[1].replace(/<[^>]+>/g, ' '))
+    );
+    const formatRowsAreRecords =
+      rowNames.length > 0 &&
+      rowNames.every((n) =>
+        FORMAT_NAMES.some((f) => f && n.toLowerCase().includes(f.toLowerCase()))
+      );
+
+    if (
+      inner.includes('class="routes"') ||
+      inner.includes('class="layers"') ||
+      inner.includes('class="step-card"') ||
+      inner.includes('class="opt"') ||
+      (inner.includes('class="format-row"') && !formatRowsAreRecords)
+    ) {
+      const style = inner.includes('class="routes"')
+        ? 'routes'
+        : inner.includes('class="layers"')
+          ? 'layers'
+          : inner.includes('class="step-card"')
+            ? 'steps'
+            : inner.includes('class="format-row"')
+              ? 'format_rows'
+              : 'options';
+      const routes = style === 'routes';
+      const cls = {
+        routes: 'route',
+        layers: 'layer',
+        steps: 'step-card',
+        options: 'opt',
+        format_rows: 'format-row'
+      }[style]!;
       const re2 = new RegExp(
         `<(?:a|div)[^>]*class="${cls}"[^>]*>([\\s\\S]*?)<\\/(?:a|div)>`,
         'g'
       );
       const items = [...inner.matchAll(re2)].map((row) => ({
-        title: first(row[1], /<h3[^>]*>([\s\S]*?)<\/h3>/),
-        body: first(row[1], /<p class="body">([\s\S]*?)<\/p>/),
+        /* A format row's title is the styled name, which carries a <span
+           class="red"> the site colours. Keeping the markup is the only way to
+           render it back, so it is preserved and rendered as HTML. */
+        title:
+          style === 'format_rows'
+            ? (row[1].match(/<span class="name">([\s\S]*?)<\/span>/) ?? ['', ''])[1].trim()
+            : first(row[1], /<h3[^>]*>([\s\S]*?)<\/h3>/),
+        body: first(row[1], /<p class="body[^"]*">([\s\S]*?)<\/p>/),
+        meta: style === 'format_rows' ? first(row[1], /<span class="m">([\s\S]*?)<\/span>/) : '',
         ctaLabel: first(row[1], /<span class="tlink">([\s\S]*?)<\/span>/),
-        ctaHref: (row[0].match(/<a[^>]*href="([^"]+)"/) ?? [])[1] ?? ''
+        ctaHref: localise((row[0].match(/<a[^>]*href="([^"]+)"/) ?? [])[1] ?? '')
       }));
       if (items.length) {
         sections.push({
@@ -296,7 +344,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
             heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
             headingStyle: headingStyleOf(inner),
             lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
-            style: routes ? 'routes' : 'layers',
+            style,
             items
           }
         });
@@ -312,7 +360,12 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       ['strip-nav', 'foundations', 'strip'],
       ['class="age"', 'age_groups', 'age_cards'],
       ['expert-grid', 'experts', 'expert_grid'],
-      ['format-row', 'formats', 'format_rows']
+      ...(formatRowsAreRecords
+        ? ([['format-row', 'formats', 'format_rows']] as [string, string, string][])
+        : []),
+      ['tier-table', 'tiers', 'tier_table'],
+      ['logo-grid', 'partners', 'logo_grid'],
+      ['stats--3', 'figures', 'stats']
     ];
     /* The team block also holds an expert-grid, but it is more than one: it
        carries the core-team cards and two headings around the grid. It has its
@@ -328,6 +381,9 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       const paras = introBlock
         ? [...introBlock[1].matchAll(/<p class="body">([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]))
         : [];
+      /* The small link is either in the section head ("Ontdek onze formats") or
+         under the progress bar on the strip. One pair of fields covers both,
+         because the presentation decides where it is rendered. */
       const foot = inner.match(/<a href="([^"]+)" class="tlink">([\s\S]*?)<\/a>/);
 
       sections.push({
@@ -847,6 +903,15 @@ function restoreUploads(value: unknown, path: string, keep: Map<string, string>)
 }
 
 /* --- run ------------------------------------------------------------------ */
+
+/* Load the real format names before lifting anything, so .format-row blocks
+   can be told apart from a hand-written list in the same shape. */
+{
+  const { data } = await db.from('formats').select('name, bracket_name');
+  FORMAT_NAMES = (data ?? []).flatMap((f: Record<string, string>) =>
+    [f.bracket_name, f.name].filter(Boolean)
+  );
+}
 
 console.log(`\nPagina's uit ${SITE}\n`);
 

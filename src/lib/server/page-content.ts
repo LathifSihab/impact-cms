@@ -43,6 +43,10 @@ export interface CollectionItem {
     category?: string;
     /** Hosted formats are built with an external partner and link out. */
     isHosted?: boolean;
+    /** Figures animate up from zero; main.js reads the target and its suffix. */
+    count?: string;
+    suffix?: string;
+    period?: string;
   };
 }
 
@@ -107,7 +111,8 @@ const SOURCES: Record<
       id: r.id,
       title: r.name,
       subtitle: r.investment_from,
-      body: Array.isArray(r.benefits) ? r.benefits.join(' · ') : ''
+      body: Array.isArray(r.benefits) ? r.benefits.join(' · ') : '',
+      tags: Array.isArray(r.benefits) ? r.benefits.map(String) : []
     })
   },
   partners: {
@@ -119,14 +124,19 @@ const SOURCES: Record<
   },
   figures: {
     table: 'figures',
-    select: 'id,display,suffix,label,explanation,period,sort_order',
+    select: 'id,value,display,suffix,label,explanation,period,sort_order',
     order: 'sort_order',
     asc: true,
     map: (r) => ({
       id: r.id,
       title: `${r.display ?? ''}${r.suffix ?? ''}`,
       subtitle: r.label,
-      body: r.explanation ?? r.period
+      body: r.explanation ?? '',
+      meta: {
+        count: r.value != null ? String(r.value) : '',
+        suffix: r.suffix ?? '',
+        period: r.period ?? ''
+      }
     })
   },
   experts: {

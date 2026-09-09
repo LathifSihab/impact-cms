@@ -295,7 +295,14 @@
               {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
               {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
             </div>
-            {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
+            {#if str(c, 'lead2')}
+              <div class="measure-2">
+                <p class="body">{str(c, 'lead')}</p>
+                <p class="body">{str(c, 'lead2')}</p>
+              </div>
+            {:else if str(c, 'lead')}
+              <p class="body">{str(c, 'lead')}</p>
+            {/if}
             {#if str(c, 'ctaLabel') && str(c, 'ctaHref')}
               <p><a href={str(c, 'ctaHref')} class="tlink">{str(c, 'ctaLabel')}</a></p>
             {/if}
@@ -304,6 +311,68 @@
 
         {#if items.length === 0}
           <p class="note body">{nl ? 'Nog niets om te tonen.' : 'Nothing to show yet.'}</p>
+        {:else if how(c) === 'logo_grid'}
+          <div class="logo-grid">
+            {#each items as it (it.id)}
+              {#if it.image}
+                <a class="slot" href={it.href || '#'} target="_blank" rel="noopener" title={it.title}>
+                  <img src={imageUrl(it.image)} alt={it.title} loading="lazy" />
+                </a>
+              {/if}
+            {/each}
+          </div>
+
+        {:else if how(c) === 'tier_table'}
+          <!-- The table is derived, not typed: columns are the tiers in order,
+               rows are every benefit any tier lists, in the order they first
+               appear, and a cell is a tick when that tier includes it. Editing
+               a tier under Inhoud is what changes this — there is no second
+               copy of the matrix to keep in step. -->
+          {@const benefits = [
+            ...new Set(items.flatMap((it) => it.tags ?? []))
+          ]}
+          <div class="tier-wrap">
+            <table class="tier-table">
+              <caption class="sr-only">
+                {nl ? 'Partnershipniveaus en wat elk niveau omvat' : 'Partnership levels and what each includes'}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col"><span class="sr-only">{nl ? 'Voordeel' : 'Benefit'}</span></th>
+                  {#each items as it (it.id)}<th scope="col">{it.title}</th>{/each}
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="invest">
+                  <th scope="row">{nl ? 'Investering' : 'Investment'}</th>
+                  {#each items as it, i (it.id)}
+                    <td
+                      style="--tier:{i + 1}"
+                      data-label={nl ? 'Investering' : 'Investment'}
+                      data-tier-name={it.title}><strong>{it.subtitle ?? ''}</strong></td
+                    >
+                  {/each}
+                </tr>
+                {#each benefits as benefit (benefit)}
+                  <tr>
+                    <th scope="row">{benefit}</th>
+                    {#each items as it, i (it.id)}
+                      {@const has = (it.tags ?? []).includes(benefit)}
+                      <td style="--tier:{i + 1}" data-label={benefit}>
+                        <span
+                          class={has ? 'yes' : 'no'}
+                          aria-label={has
+                            ? nl ? 'inbegrepen' : 'included'
+                            : nl ? 'niet inbegrepen' : 'not included'}>{has ? '✓' : '—'}</span
+                        >
+                      </td>
+                    {/each}
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+
         {:else if how(c) === 'logos'}
           <div class="logos" style="margin-top:26px">
             {#each items as it (it.id)}
@@ -315,10 +384,14 @@
             {/each}
           </div>
         {:else if how(c) === 'stats'}
-          <div class="stats" style="margin-top:26px">
+          <!-- data-counters is what main.js counts up from zero; without
+               data-count and data-suffix the figures just sit there. -->
+          <div class="stats stats--3" data-counters>
             {#each items as it (it.id)}
               <div class="stat">
-                <div class="n">{it.title}</div>
+                <div class="n" data-count={it.meta?.count ?? undefined} data-suffix={it.meta?.suffix ?? undefined}>
+                  {it.meta?.count ? '0' : it.title}
+                </div>
                 <div class="k">{it.subtitle}</div>
                 {#if it.body}<p class="body">{it.body}</p>{/if}
               </div>
@@ -539,7 +612,9 @@
     </section>
 
   {:else if s.type === 'numbered_list'}
-    {@const routes = str(c, 'style') !== 'layers'}
+    {@const style = str(c, 'style') || 'routes'}
+    {@const routes = style === 'routes'}
+    {@const cards = style === 'steps' || style === 'options'}
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
       <div class="wrap">
         {#if str(c, 'running') || str(c, 'heading')}
@@ -551,10 +626,24 @@
             {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
           </div>
         {/if}
-        <div class={routes ? 'routes' : 'layers'}>
+        <!-- Steps and options are both .cards-3; only the numbering differs. -->
+        <div class={style === 'format_rows' ? undefined : cards ? 'cards-3' : routes ? 'routes' : 'layers'}>
           {#each list(c, 'items') as item, i (item.title)}
             {@const n = String(i + 1).padStart(2, '0')}
-            {#if routes && item.ctaHref}
+            {#if style === 'format_rows'}
+            <a class="format-row" href={item.ctaHref || '#'}>
+              <span class="n">{n}</span>
+              <span class="name">{@html item.title}</span>
+              <p class="body desc">{item.body ?? ''}</p>
+              <span class="m">{item.meta ?? ''}</span>
+            </a>
+          {:else if cards}
+            <article class={style === 'steps' ? 'step-card' : 'opt'}>
+              {#if style === 'steps'}<div class="n">{n}</div>{/if}
+              <h3 class={style === 'options' ? 'h' : undefined}>{item.title}</h3>
+              {#if item.body}<p class="body">{item.body}</p>{/if}
+            </article>
+          {:else if routes && item.ctaHref}
               <a class="route" href={item.ctaHref}>
                 <span class="n">{n}</span>
                 <h3>{item.title}</h3>
