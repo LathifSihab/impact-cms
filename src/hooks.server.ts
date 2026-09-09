@@ -132,9 +132,21 @@ export const handle: Handle = async ({ event, resolve }) => {
     redirect(303, ADMIN_PREFIX);
   }
 
-  return resolve(event, {
+  const response = await resolve(event, {
     // Supabase's auth cookies must survive the filter SvelteKit applies to
     // headers on serialised responses.
     filterSerializedResponseHeaders: (name) => name === 'content-range' || name === 'x-supabase-api-version'
   });
+
+  /* Keep the backoffice out of search results from the app itself.
+   *
+   * vercel.json carries the same header, but the SvelteKit adapter writes its
+   * own routing config into .vercel/output and the host's header rules do not
+   * reach these routes — the header was simply absent on the deploy. Setting it
+   * here does not depend on the host, so it survives moving off Vercel too. */
+  if (isAdmin || path === '/login') {
+    response.headers.set('x-robots-tag', 'noindex, nofollow');
+  }
+
+  return response;
 };

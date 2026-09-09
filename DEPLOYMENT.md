@@ -370,6 +370,12 @@ Work through all of these. Several failures only show up on one of them.
 
 **Not indexed — the whole deploy, on purpose**
 
+> `vercel.json`'s `headers` rules do **not** reach these routes: the SvelteKit
+> adapter writes its own routing config into `.vercel/output`, and the host's
+> rules are bypassed. The `X-Robots-Tag` header is therefore set in
+> `hooks.server.ts` instead, which also means it survives moving off Vercel.
+
+
 ```bash
 curl -sI https://<your-domain>/admin | grep -i x-robots-tag
 curl -s  https://<your-domain>/ | grep -i 'name="robots"'
@@ -425,6 +431,25 @@ vercel logs <deployment-url>        # the thrown error itself
 
 The usual cause is that the variables were added *after* the last deploy. See
 the next entry.
+
+**A variable's value has an invisible character in front of it (Windows).**
+Piping a value into `vercel env add` from PowerShell prepends a byte-order mark,
+and the CLI stores it as part of the value. It is invisible everywhere except in
+the output: URLs come out as
+`https://…/public/﻿uploads/…` and fail. Use `--value` instead of a pipe:
+
+```powershell
+vercel env add NAME production --type config --value "the value" --force --yes
+```
+
+`--type config` for anything `PUBLIC_`, `--type secret` for the rest. Without
+`--type` the CLI stops and asks whether to expose the value publicly, which a
+script cannot answer. To check for it afterwards:
+
+```powershell
+vercel env pull pulled.env --environment production --yes
+Select-String -Path pulled.env -Pattern ([char]0xFEFF)
+```
 
 **A variable I changed in Vercel has no effect.**
 Environment variables reach the running app only at deploy time. Changing one in
