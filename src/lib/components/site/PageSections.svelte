@@ -119,6 +119,29 @@
               {/if}
             {/each}
           </div>
+        {:else if str(c, 'source') === 'events'}
+          <!-- The site's own row for an edition, so a teaser on the homepage is
+               the same component as the list on /events. -->
+          {#each items as it (it.id)}
+            <a class="event-row" href={it.href}>
+              <div class="event-row-main">
+                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} />{/if}
+                <div><h3>{it.title}</h3></div>
+                <div class="when meta">{it.subtitle}</div>
+                <div class="cta"><span class="status">{nl ? 'Bekijk editie' : 'View edition'} →</span></div>
+              </div>
+            </a>
+          {/each}
+        {:else if str(c, 'source') === 'journal'}
+          <div class="cards-3" style="margin-top:26px">
+            {#each items as it (it.id)}
+              <a class="jcard" href={it.href}>
+                {#if it.image}<img src={imageUrl(it.image)} alt={it.title} loading="lazy" />{/if}
+                <h3>{it.title}</h3>
+                {#if it.subtitle}<p class="meta">{it.subtitle}</p>{/if}
+              </a>
+            {/each}
+          </div>
         {:else if str(c, 'source') === 'figures'}
           <div class="stats" style="margin-top:26px">
             {#each items as it (it.id)}

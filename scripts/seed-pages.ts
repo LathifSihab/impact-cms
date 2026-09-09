@@ -293,6 +293,69 @@ async function keepUploadedHero(
   return current.startsWith('/uploads/') ? current : candidate;
 }
 
+
+/**
+ * Give the homepage its live blocks.
+ *
+ * The extraction lifts the headings — "Six foundations", "Wat kan je binnenkort
+ * meemaken?" — but the things they introduce are records, not markup, so the
+ * lift leaves a heading with nothing under it. These insert a `collection`
+ * section straight after each, so the homepage shows real foundations, real
+ * editions and real articles, all still edited in Inhoud.
+ */
+function withHomeCollections(sections: Section[]): Section[] {
+  const after: Record<string, { source: string; limit: string }> = {
+    fundamenten: { source: 'foundations', limit: '' },
+    events: { source: 'events', limit: '3' },
+    'journal-teaser': { source: 'journal', limit: '3' }
+  };
+
+  const out: Section[] = [];
+  for (const section of sections) {
+    out.push(section);
+    const want = section.anchor ? after[section.anchor] : undefined;
+    if (!want) continue;
+    out.push({
+      type: 'collection',
+      ground: section.ground === 'sand' ? 'sand' : 'white',
+      anchor: `${section.anchor}-lijst`,
+      content: { running: '', heading: '', lead: '', ...want }
+    });
+  }
+  return out;
+}
+
+
+/**
+ * Keep uploaded images on sections, the same way heroes are kept.
+ *
+ * Sections are replaced wholesale on every run and their images are re-read
+ * from the HTML, so a migrated or uploaded image would be overwritten by the
+ * legacy assets/... path it came from. Matching on anchor — falling back to
+ * position — is stable because the extraction is deterministic over the same
+ * file.
+ */
+async function keepSectionImages(pageId: string, locale: string, next: Section[]): Promise<Section[]> {
+  const { data } = await db
+    .from('page_sections')
+    .select('position, anchor, content')
+    .eq('page_id', pageId)
+    .eq('locale', locale);
+
+  const managed = new Map<string, string>();
+  for (const row of (data ?? []) as Record<string, any>[]) {
+    const image = String(row.content?.image ?? '');
+    if (image.startsWith('/uploads/')) managed.set(row.anchor || `#${row.position}`, image);
+  }
+  if (managed.size === 0) return next;
+
+  return next.map((section, i) => {
+    const keep = managed.get(section.anchor || `#${i}`);
+    if (!keep || !section.content.image) return section;
+    return { ...section, content: { ...section.content, image: keep } };
+  });
+}
+
 /* --- run ------------------------------------------------------------------ */
 
 console.log(`\nPagina's uit ${SITE}\n`);
@@ -309,7 +372,10 @@ for (const [i, page] of PAGES.entries()) {
   const html = readFileSync(file, 'utf8');
   const main = (html.match(/<main[^>]*>([\s\S]*?)<\/main>/) ?? [, html])[1] ?? html;
   const hero = extractHero(html);
-  const { sections, skipped } = extractSections(main);
+  const extracted = extractSections(main);
+  const lifted = page.id === 'home' ? withHomeCollections(extracted.sections) : extracted.sections;
+  const sections = await keepSectionImages(page.id, 'nl', lifted);
+  const skipped = extracted.skipped;
 
   const seo = {
     title: first(html, /<title>([\s\S]*?)<\/title>/),

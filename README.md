@@ -270,6 +270,12 @@ magic number, not by the `Content-Type` the client claims.
 
 ## Page configuration
 
+The homepage is a configured page like any other: `/` renders the `home` record,
+hero and sections, with the foundations, the upcoming editions and the journal
+teaser coming from `collection` sections rather than from the route. What appears
+on the homepage is a backoffice decision.
+
+
 `/admin/pages` configures the eight prose pages — Home, Over, Samenwerken,
 Social Impact, Hosted Experiences, Media, Contact, Privacy — plus the copy on
 the two list pages, Events and Journal.
