@@ -16,80 +16,45 @@ the live site and the production database, not recalled.
 | Images | 99 originals + 582 responsive variants, served from Supabase Storage |
 | Backoffice | live, guarded, one account |
 | Database | 19 migrations applied, fully seeded |
-| Dashboard tiers 1–3 | live (content, Brevo, Ticket Tailor) |
+| Dashboard tiers 1–4 | live; Plausible's half waits on a key (§6) |
+| Signup endpoint | in-house at `/api/subscribe`, receipts in Postgres |
 
 What follows is what is *not* finished, ordered by what actually costs you
 something today.
 
 ---
 
-## 1. The waitlist form is not connected — **do this first**
+## 1. The waitlist and newsletter forms — **done**
 
-**Priority: high.** This is the one thing a visitor can actually *do* on the
-site, and right now it tells them it is unavailable.
+They were the one thing a visitor could actually *do* on the site, and every
+event page used to say the form was not connected.
 
-### What is wrong
+The endpoint could not simply be re-pointed: it was a serverless function living
+in the Netlify repository, and there is no such function on Vercel. It is now
+`/api/subscribe`, served by this app — a port of `reference/subscribe.mjs` with
+the same fields, status codes and JSON, because the forms posting to it are the
+same forms. The forms default to it, so no variable is needed;
+`PUBLIC_SUBSCRIBE_ENDPOINT` survives only as an override.
 
-`PUBLIC_SUBSCRIBE_ENDPOINT` is empty, so every event page shows:
+One thing had to change rather than be copied. The original leaned on Netlify
+Forms for an audit copy — *"a Brevo outage degrades to 'not segmented yet'
+rather than 'lost'"*. Nothing holds that copy now, so the row is written to
+Postgres first and handed to Brevo second, with Brevo's answer recorded on it.
+`/admin/signalen` counts the ones Brevo did not take, so a failed batch can be
+found and replayed rather than guessed at.
 
-> Het wachtlijstformulier is op deze omgeving niet aangesloten.
+**Verified against production:** 405 on GET, 422 with field errors on a bad
+body, 200 and silence for the honeypot, 403 for a cross-site POST, and a valid
+waiting-list signup landing as a row with its consent, age, edition and campaign
+attribution alongside `brevo_ok: true, brevo_status: 201`.
 
-That message exists so the form never posts into nowhere — a form that silently
-swallows a signup is worse than one that admits it is off. But it means nobody
-can join a waiting list.
+Brevo lists are set — 3 Newsletter, 4 Waitlist. Without them a contact is
+created and carries its attributes but joins no list, which is easy to miss.
 
-### Why it is empty
-
-The static site posts to `/.netlify/functions/subscribe` — a *relative* path,
-which works because the form and the function are on the same Netlify origin.
-The CMS is on Vercel, so it needs the absolute URL. There was no absolute URL to
-copy, which is why the variable was never filled in.
-
-### The value
-
-```
-https://demo-impact-c399e3.netlify.app/.netlify/functions/subscribe
-```
-
-I verified this endpoint is live and working:
-
-- `GET` → `405` (it only accepts POST — correct)
-- `POST` with no email → `422 {"ok":false,"errors":{"email":"Vul een geldig e-mailadres in."}}`
-
-So it is up, validating, and reachable from outside Netlify.
-
-### Steps
-
-```powershell
-cd cms
-
-vercel env add PUBLIC_SUBSCRIBE_ENDPOINT production `
-  --type config `
-  --value "https://demo-impact-c399e3.netlify.app/.netlify/functions/subscribe" `
-  --force --yes
-
-vercel deploy --prod --yes
-```
-
-> **Use `--value`, never a pipe.** Piping into `vercel env add` from PowerShell
-> prepends an invisible byte-order mark that becomes part of the value. It cost
-> us a deploy already — see DEPLOYMENT.md's troubleshooting section.
-
-### Verify
-
-1. Open https://demo-impact-cms.vercel.app/events and click any edition.
-2. The waiting-list form is there, with no "niet aangesloten" message.
-3. Submit a real address of your own.
-4. Brevo → Contacts → list **4 (Waitlist)**. Your address is there, with the
-   attributes filled in: `EVENT`, `LOCALE`, `LANDING_PAGE`, `REFERRER`.
-5. `/admin/signalen` shows the signup.
-
-### If it does not work
-
-The function is CORS-restricted to origins Netlify knows about. If the browser
-console shows a CORS error, the function needs `https://demo-impact-cms.vercel.app`
-added to its allowed origins — that is a change in the **static site's**
-repository (`reference/subscribe.mjs` is the source), not here.
+**Worth doing once:** submit a real address of your own on
+https://demo-impact-cms.vercel.app/events, then check Brevo → Contacts → list 4
+and `/admin/signalen`. It is the only part of this nobody has exercised as a
+human.
 
 ---
 
@@ -273,24 +238,64 @@ required, and the basis for the two processors outside the EEA.
 
 ---
 
-## 6. Plausible traffic panel — needs a plan check first
+## 6. Plausible traffic — built, and waiting on one key
 
-**Priority: low. Tell me the answer and I can build it.**
+**Priority: low. The dashboard works without it.**
 
-The dashboard has three of its four tiers live: content counts, Brevo signups,
-Ticket Tailor sales. Tier 4 is traffic and conversion, and it is not built.
+Tier 4 is built. It has two halves, and only one of them needs anything from
+you.
 
-`08-DASHBOARD.md` flags the Plausible Stats API as **plan-gated** — it is not
-available on every tier.
+### The half that already works
 
-**What to check:** Plausible → your site → **Settings → API keys**. If you can
-create a key, the Stats API is available.
+**Attribution and conversion, from our own rows.** Since `/api/subscribe` came
+in-house, every signup is recorded with the page, referrer and campaign it
+arrived through. `/admin/signalen` now shows:
 
-- **If yes:** send me the answer and I will build the panel.
-- **If no:** the honest options are to upgrade, or to link out to the Plausible
-  dashboard from `/admin/signalen` instead of half-building a panel.
+- signups over 90 days, split newsletter and waiting list
+- which campaign produced them
+- which page they landed on
+- which site referred them
+- the last ten, with their edition and language
+- **how many reached us but not Brevo** — those are not lost, they are sitting
+  in the table waiting to be replayed, and without a count nobody would look
+
+That is the brief's *"which campaign/page/waitlist drove each signup"*, answered
+from our own data rather than inferred from a traffic tool. No key, no plan, no
+external dependency.
+
+### The half that needs a key
+
+**Visitor counts from Plausible.** The panel currently says:
+
+> Nog niet gekoppeld. Zet PLAUSIBLE_API_KEY en PUBLIC_PLAUSIBLE_DOMAIN om
+> bezoekcijfers te tonen.
+
+To connect it:
+
+1. Plausible → your site → **Settings → API keys** → create a key.
+2. Then:
+
+```powershell
+cd cms
+vercel env add PLAUSIBLE_API_KEY production --type secret --value "<key>" --force --yes
+vercel env add PUBLIC_PLAUSIBLE_DOMAIN production --type config --value "<your-site-domain>" --force --yes
+vercel deploy --prod --yes
+```
+
+The domain is the site name as Plausible knows it, not a URL — e.g.
+`demo-impact-c399e3.netlify.app`.
+
+**The Stats API is plan-gated.** If it is not on your plan, the panel says so
+specifically rather than showing an empty chart — "Plausible geeft geen toegang
+tot de Stats API". Upgrading or linking out to the Plausible dashboard are both
+reasonable answers; half a chart is not.
+
+Once connected, the conversion figure appears too: their visitors over our
+signups, which is a real ratio rather than two numbers from two systems that
+count differently.
 
 ---
+
 
 ## 7. Page fidelity — 84.7%, and most of the rest should stay
 
@@ -354,6 +359,7 @@ alone so the seed stays a faithful copy of the source content.
    in, no deploy needed.
 4. **§5** — send the privacy text to your lawyers. It is the long pole; start it
    early even though it finishes late.
-5. **§6** — check the Plausible plan and tell me.
+5. **§6** — add the Plausible key if the Stats API is on your plan. The rest of
+   that panel already works without it.
 6. **§2** — the box office, when you have a real event in Ticket Tailor.
 7. **§7** — the remaining fidelity, last, because most of it should not change.

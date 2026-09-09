@@ -145,19 +145,37 @@ it. The app runs on the anon key with RLS.
 
 ## Signalen
 
-The one screen that beats an off-the-shelf tool: editions from this database,
-signups from Brevo, sales from Ticket Tailor, joined on the event slug that the
-signup form sends as the `EVENT` attribute.
+The joined view: who visited, who signed up, and what sold — the four tiers
+08-DASHBOARD asks for, in one screen.
 
-Read-only, on purpose. Brevo owns the list, Ticket Tailor owns the orders, and
-neither gets a second author. Without `BREVO_API_KEY` or `TICKET_TAILOR_API_KEY`
-the page says which source it could not read and why, rather than showing an
-empty table that looks like "no signups" — this project has already lost a day to
-a failure that looked like a success.
+| Tier | Panel | Source | Needs |
+|---|---|---|---|
+| 1 | Content and consent | our Postgres | nothing |
+| 2 | Signups per edition | Brevo | `BREVO_API_KEY` |
+| 3 | Ticket sales | Ticket Tailor | `TICKET_TAILOR_API_KEY` |
+| 4 | Traffic | Plausible | `PLAUSIBLE_API_KEY`, `PUBLIC_PLAUSIBLE_DOMAIN` |
+| 4 | Attribution and conversion | our Postgres | nothing |
 
-It also lists signups whose `EVENT` matches no edition. Those contacts fall
-outside the segment when registration opens, which is a real and otherwise
-invisible way to lose people.
+**Every panel fails soft, with the reason on screen.** A missing key or a dead
+upstream marks that source unavailable and says which variable is absent; the
+rest of the page still works. The project's own lesson is that a silent success
+and a silent failure must never look identical.
+
+**Tier 4's attribution half deliberately does not use Plausible.** Since
+`/api/subscribe` came in-house, every signup is recorded with the page, referrer
+and campaign it arrived through. That answers the brief's "which campaign drove
+each signup" from our own rows rather than by inference from a traffic tool, it
+needs no key, and it works on the free tier of everything. Plausible is asked
+only how many people came, so conversion is a real ratio — their visitors over
+our signups — rather than two numbers from two systems that count differently.
+
+Plausible's Stats API is plan-gated. When it refuses, the panel says that rather
+than showing an empty chart, because "upgrade your plan" and "your key is wrong"
+need different actions.
+
+**`undelivered` is the number to act on.** A signup that reached us but not
+Brevo is not lost — it is in `subscriptions` waiting to be replayed — and
+without a count nobody would think to look.
 
 ## What this deliberately does not do
 

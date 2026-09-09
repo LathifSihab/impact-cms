@@ -134,4 +134,139 @@
       </div>
     </section>
   {/if}
+
+  <!-- Tier 4: traffic and conversion. Two sources on purpose — Plausible knows
+       how many came, our own receipts know what each one arrived through. -->
+  <section style="margin-top:48px">
+    <h2 class="h" style="margin-bottom:6px">Verkeer en conversie</h2>
+    <p class="body" style="margin-bottom:16px;max-width:64ch">
+      Bezoek uit Plausible, herkomst uit onze eigen inschrijvingen. Die tweede helft
+      heeft geen sleutel nodig: sinds het formulier hier binnenkomt, staat bij elke
+      inschrijving de pagina, de verwijzer en de campagne waarlangs ze kwam.
+    </p>
+
+    {#if !data.trafficState.ok}
+      <p class="note" style="margin-bottom:20px">
+        <strong>Bezoekcijfers niet gelezen.</strong>
+        {data.trafficState.reason}
+        {#if data.trafficState.detail}<span class="mono"> ({data.trafficState.detail})</span>{/if}
+      </p>
+    {:else}
+      <div class="rows" style="margin-bottom:24px">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+          <span class="name">Bezoekers, 30 dagen</span>
+          <span class="cell num">{data.traffic.visitors}</span>
+        </div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+          <span class="name">Paginaweergaven</span>
+          <span class="cell num">{data.traffic.pageviews}</span>
+        </div>
+        {#if data.conversion !== null}
+          <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+            <span class="name">Inschrijvingen per bezoeker</span>
+            <span class="cell num">{data.conversion}%</span>
+          </div>
+        {/if}
+      </div>
+
+      {#if data.traffic.sources.length}
+        <h3 class="h" style="margin:24px 0 10px">Waar bezoekers vandaan komen</h3>
+        <div class="rows">
+          {#each data.traffic.sources as s (s.source)}
+            <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+              <span class="name">{s.source}</span>
+              <span class="cell num">{s.visitors}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+
+    {#if !data.attributionState.ok}
+      <p class="note">
+        <strong>Eigen inschrijvingen niet gelezen.</strong>
+        {data.attributionState.reason}
+        {#if data.attributionState.detail}<span class="mono"> ({data.attributionState.detail})</span>{/if}
+      </p>
+    {:else}
+      <h3 class="h" style="margin:32px 0 10px">Onze eigen inschrijvingen, 90 dagen</h3>
+      <div class="rows">
+        <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+          <span class="name">Totaal</span>
+          <span class="cell num">{data.attribution.total}</span>
+        </div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+          <span class="name">Nieuwsbrief</span>
+          <span class="cell num">{data.attribution.newsletter}</span>
+        </div>
+        <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+          <span class="name">Wachtlijst</span>
+          <span class="cell num">{data.attribution.waitlist}</span>
+        </div>
+      </div>
+
+      {#if data.attribution.undelivered > 0}
+        <!-- Not lost: recorded here, but Brevo did not take it. Worth acting on. -->
+        <p class="note" style="margin-top:16px">
+          <strong>{data.attribution.undelivered} inschrijving(en) niet bij Brevo aangekomen.</strong>
+          Ze staan wel hier, dus er is niets weg — maar ze zitten nog niet in een lijst en
+          moeten opnieuw aangeboden worden.
+        </p>
+      {/if}
+
+      {#if data.attribution.campaigns.length}
+        <h3 class="h" style="margin:28px 0 10px">Welke campagne het opleverde</h3>
+        <div class="rows">
+          {#each data.attribution.campaigns as c (c.label)}
+            <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+              <span class="name">{c.label}</span>
+              <span class="cell num">{c.total}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if data.attribution.landings.length}
+        <h3 class="h" style="margin:28px 0 10px">Op welke pagina ze binnenkwamen</h3>
+        <div class="rows">
+          {#each data.attribution.landings as l (l.label)}
+            <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+              <span class="name mono">{l.label}</span>
+              <span class="cell num">{l.total}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if data.attribution.referrers.length}
+        <h3 class="h" style="margin:28px 0 10px">Waarlangs ze binnenkwamen</h3>
+        <div class="rows">
+          {#each data.attribution.referrers as r (r.label)}
+            <div class="row" style="grid-template-columns:minmax(0,1fr) 110px">
+              <span class="name">{r.label}</span>
+              <span class="cell num">{r.total}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+
+      {#if data.attribution.recent.length}
+        <h3 class="h" style="margin:28px 0 10px">Laatste inschrijvingen</h3>
+        <div class="rows">
+          {#each data.attribution.recent as r (r.at)}
+            <div class="row" style="grid-template-columns:150px 110px minmax(0,1fr) 90px">
+              <span class="name mono">{r.at.slice(0, 16).replace('T', ' ')}</span>
+              <span class="cell">{r.form}</span>
+              <span class="cell">{r.event || r.campaign || '—'}</span>
+              <span class="cell">
+                {#if r.delivered === false}
+                  <Badge kind="consent" value={false} no="niet bij Brevo" />
+                {:else}{r.locale}{/if}
+              </span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    {/if}
+  </section>
 </div>
