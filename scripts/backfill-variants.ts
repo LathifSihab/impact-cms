@@ -19,12 +19,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { existsSync, readFileSync } from 'node:fs';
-import { rm, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COLLECTIONS, NAV_ORDER, type Field } from '../src/lib/collections.ts';
 import { intrinsicWidth, isConvertible, ladderFor } from '../src/lib/images.ts';
 import { generate, normalise } from '../src/lib/server/variants.ts';
+import { storage, backend } from '../src/lib/server/storage.ts';
 import { envHelp } from './env-help.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -53,18 +53,26 @@ const db = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
+const TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif'
+};
+const contentTypeOf = (ext: string) => TYPES[ext] ?? 'application/octet-stream';
+
 let renamed = 0;
 let laddered = 0;
 let alreadyDone = 0;
 let variantsWritten = 0;
 const problems: string[] = [];
 
-/** Public path (/uploads/a/b/c.jpg) to the file on disk. */
-function onDisk(publicPath: string): string | null {
+/** Public path (/uploads/a/b/c.jpg) to the storage key. */
+function keyOf(publicPath: string): string {
   const relative = publicPath.slice('/uploads/'.length);
-  if (relative.includes('..')) return null;
-  const full = join(UPLOAD_DIR, relative);
-  return existsSync(full) ? full : null;
+  return relative.includes('..') ? '' : relative;
 }
 
 /* One file can be referenced from more than one row — a gallery entry and a
@@ -89,8 +97,8 @@ async function upgrade(stored: string): Promise<string | null> {
 }
 
 async function upgradeOnce(stored: string): Promise<string | null> {
-  const file = onDisk(stored);
-  if (!file) {
+  const key = keyOf(stored);
+  if (!key || !(await storage.exists(key))) {
     problems.push(`${stored}  (bestand ontbreekt)`);
     return null;
   }
@@ -99,7 +107,7 @@ async function upgradeOnce(stored: string): Promise<string | null> {
   if (existing) {
     // Already named for its width; only fill in rungs that are missing.
     const full = ladderFor(existing).length * 2;
-    const written = dryRun ? 0 : await generate(file, existing);
+    const written = dryRun ? 0 : await generate(key, existing);
     variantsWritten += written;
     if (written === 0) {
       alreadyDone++;
@@ -110,18 +118,22 @@ async function upgradeOnce(stored: string): Promise<string | null> {
     return null;
   }
 
-  const ext = extname(file).toLowerCase();
-  const bytes = new Uint8Array(readFileSync(file));
-  const normalised = await normalise(bytes, ext);
+  const ext = extname(key).toLowerCase();
+  const source = await storage.get(key);
+  if (!source) {
+    problems.push(`${stored}  (bestand ontbreekt)`);
+    return null;
+  }
+  const normalised = await normalise(source, ext);
   if (!normalised) {
     problems.push(`${stored}  (kon de breedte niet lezen)`);
     return null;
   }
 
   const { width } = normalised;
-  const stem = basename(file, ext);
+  const stem = basename(key, ext);
   const nextName = `${stem}-${width}${ext}`;
-  const nextPath = join(dirname(file), nextName);
+  const nextKey = `${key.slice(0, key.lastIndexOf('/'))}/${nextName}`;
   const nextPublic = `${stored.slice(0, stored.lastIndexOf('/'))}/${nextName}`;
 
   console.log(
@@ -135,9 +147,9 @@ async function upgradeOnce(stored: string): Promise<string | null> {
 
   /* Write the new name first, generate from it, and only then drop the old
      file — so an interrupted run leaves a working image rather than a gap. */
-  await writeFile(nextPath, normalised.bytes);
-  variantsWritten += await generate(nextPath, width);
-  if (nextPath !== file) await rm(file, { force: true });
+  await storage.put(nextKey, normalised.bytes, contentTypeOf(ext));
+  variantsWritten += await generate(nextKey, width);
+  if (nextKey !== key) await storage.del(key);
 
   renamed++;
   return nextPublic;
@@ -172,7 +184,8 @@ async function upgradeDeep(value: unknown): Promise<{ value: unknown; touched: b
   return { value, touched: false };
 }
 
-console.log(`\nUploads: ${UPLOAD_DIR}`);
+console.log(`
+Opslag:  ${backend()}${backend() === 'disk' ? ` (${UPLOAD_DIR})` : ''}`);
 if (dryRun) console.log('Modus:   dry run, er wordt niets geschreven');
 console.log('');
 

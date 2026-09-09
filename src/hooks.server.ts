@@ -11,6 +11,19 @@
 import { createServerClient } from '@supabase/ssr';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { env } from '$env/dynamic/public';
+import { env as privateEnv } from '$env/dynamic/private';
+
+/* Make the .env values visible to plain-node modules.
+ *
+ * lib/server/storage.ts reads process.env rather than $env, because the
+ * maintenance scripts import it directly under node where SvelteKit's aliases
+ * do not resolve. In production process.env already holds everything; in dev
+ * Vite loads .env into $env only, so without this bridge the dev server would
+ * silently choose a different storage backend from the one the scripts use —
+ * and uploads would land on disk while the pages read from the bucket. */
+for (const [key, value] of Object.entries({ ...privateEnv, ...env })) {
+  if (value !== undefined && process.env[key] === undefined) process.env[key] = value;
+}
 
 /**
  * The backoffice lives entirely under /admin, and that prefix is the whole

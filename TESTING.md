@@ -722,6 +722,29 @@ op dossier** is ticked on the section — that is the consent gate, not a bug.
 GSAP and `cinema.js` load only on a page that actually has a `[data-cinema]`,
 so the other ten pages do not pay for them.
 
+## Storage backend
+
+Uploads go to a Supabase Storage bucket when `PUBLIC_SUPABASE_STORAGE_BUCKET`
+is set, and to `cms/uploads/` when it is not. Production must use the bucket:
+Vercel's filesystem is read-only and ephemeral.
+
+- [ ] With the bucket set, view source on `/`. Image URLs point at
+      `…/storage/v1/object/public/<bucket>/…`, not at `/uploads/…`.
+- [ ] Upload an image in the backoffice and save. It appears in the bucket
+      (Supabase → Storage) together with its variant ladder, and the page shows
+      it. Check the bucket, not just the page — the page would look right even
+      if the file had gone to disk.
+- [ ] An old `/uploads/...` link still works: it answers `301` to the bucket URL
+      rather than streaming the bytes through a function.
+- [ ] Replace that image. The old original **and its variants** disappear from
+      the bucket.
+- [ ] `npm run storage:push` a second time reports everything already present.
+
+```bash
+# what is actually in the bucket
+npm run storage:push -- --dry-run
+```
+
 ## Responsive image variants
 
 Every uploaded photo gets a ladder of AVIF and WebP copies beside it, and the

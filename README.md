@@ -499,6 +499,89 @@ Nothing is reported as unrecognised any more: `downloads` covers the /media file
 list and `split_list` covers the two-column comparison on /hosted-experiences,
 which were the last two blocks a person could not edit.
 
+## Deploying
+
+Target is Vercel, as 06-CMS-SCOPE decides. The one thing that has to be right
+before the first deploy is storage.
+
+### Uploads cannot live on disk
+
+Vercel's filesystem is read-only and ephemeral: a file written by an upload is
+gone on the next invocation, so every image 404s within minutes. Uploads
+therefore go to a Supabase Storage bucket — already in the stack, no new vendor,
+same project and keys.
+
+`src/lib/server/storage.ts` holds both backends behind one interface. Which one
+runs is decided by whether a bucket is named:
+
+```
+PUBLIC_SUPABASE_STORAGE_BUCKET=uploads   # Supabase Storage
+PUBLIC_SUPABASE_STORAGE_BUCKET=          # a folder on disk
+```
+
+**The default is Supabase whenever a bucket is set, including locally.** That is
+deliberate: a dev environment that exercises a different storage path from
+production is one that cannot catch storage bugs — and this one was caught
+exactly that way, when the dev server wrote to disk while the pages read from
+the bucket.
+
+The bucket is **public**. These are the images on the public site; a signed URL
+per image would mean a round trip through our own server for every photo, which
+is the cost moving off disk is meant to remove. Writes still need the
+service-role key, which the browser never sees.
+
+**The stored path does not change.** Columns keep `/uploads/<table>/<id>/<file>`
+whichever backend is in use; `imageUrl()` maps it to the bucket's CDN URL at
+render time. Switching backends is a config change, not a content migration.
+
+### First deploy
+
+```bash
+# 1. move what is already on disk into the bucket (idempotent, safe to repeat)
+npm run storage:push
+npm run storage:push -- --dry-run      # to look first
+npm run storage:push -- --prune        # also delete objects with no local file
+
+# 2. link the project and set the variables
+vercel link
+vercel env add PUBLIC_SUPABASE_URL production
+vercel env add PUBLIC_SUPABASE_ANON_KEY production
+vercel env add SUPABASE_SERVICE_ROLE_KEY production
+vercel env add PUBLIC_SUPABASE_STORAGE_BUCKET production
+vercel env add BREVO_API_KEY production
+vercel env add TICKET_TAILOR_API_KEY production
+vercel env add PUBLIC_SITE_URL production
+vercel env add PUBLIC_STATIC_SITE_BASE production
+
+# 3. ship
+vercel deploy --prod
+```
+
+`vercel.json` pins the framework and adds `X-Robots-Tag: noindex` on `/admin`
+and `/login`, so the backoffice cannot be indexed even if a link leaks.
+
+**A value set in Vercel's UI reaches the running app only at deploy time.**
+07-DECISIONS records this project being bitten by it twice — Brevo returned 401
+against a key that was already correct in the dashboard. Changing a variable and
+refreshing changes nothing; redeploy.
+
+### Building on Windows
+
+`npm run build` fails locally on Windows with `EPERM: operation not permitted,
+symlink`. The Vercel adapter symlinks its route functions, and Windows refuses
+that without Developer Mode. It is not a code problem — the same build succeeds
+on Linux, which is what Vercel runs. To check a production build locally:
+
+```bash
+ADAPTER=node npm run build      # a plain Node server, no symlinks
+```
+
+### After a deploy, check
+
+- An image loads, and its URL is the bucket's, not `/uploads/...`.
+- Upload a new image in the backoffice, save, and reload the public page.
+- `/admin` redirects to `/login` when signed out.
+
 ## Not done
 
 - **Translation pairing.** `locale` is still one record per language rather than

@@ -12,6 +12,8 @@
  * right size for that. Record content carries its own `locale`.
  */
 
+import { env } from '$env/dynamic/public';
+
 import type { Locale } from './collections';
 
 export const LOCALES: Locale[] = ['nl', 'en'];
@@ -199,9 +201,28 @@ export function formatDate(iso: string, locale: Locale): string {
  * `//uploads/...`, which a browser reads as protocol-relative and sends to a
  * host called "uploads" — so the distinction has to be made, not assumed.
  */
+/**
+ * Turn a stored `/uploads/...` path into the URL a browser should fetch.
+ *
+ * With Supabase Storage that is the bucket's public URL, so images come off the
+ * CDN instead of through a function on every request. Without a bucket the path
+ * is already the route that serves them. The database value is the same either
+ * way, which is what makes the storage backend swappable without a content
+ * migration behind it.
+ */
+function uploadUrl(path: string): string {
+  const bucket = env.PUBLIC_SUPABASE_STORAGE_BUCKET;
+  if (!bucket || !path.startsWith('/uploads/')) return path;
+  const base = (env.PUBLIC_SUPABASE_URL ?? '').replace(/\/+$/, '');
+  return `${base}/storage/v1/object/public/${bucket}${path.slice('/uploads'.length)}`;
+}
+
 export function imageUrl(stored: string | null | undefined): string {
   const value = (stored ?? '').trim();
   if (!value) return '';
   if (/^(https?:)?\/\//.test(value)) return value;
-  return value.startsWith('/') ? value : `/${value}`;
+  const absolute = value.startsWith('/') ? value : `/${value}`;
+  // Managed uploads may live in a bucket; uploadUrl maps them, and leaves a
+  // legacy assets/... path alone.
+  return uploadUrl(absolute);
 }

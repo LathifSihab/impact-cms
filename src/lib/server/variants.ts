@@ -12,9 +12,8 @@
  * keeps a six-width ladder under a couple of seconds on a laptop.
  */
 
-import { readFile, stat, writeFile } from 'node:fs/promises';
-import { basename, dirname, extname, join } from 'node:path';
 import { isConvertible, ladderFor, MAX_WIDTH, VARIANT_FORMATS } from '../images.ts';
+import { storage } from './storage.ts';
 
 const AVIF = { quality: 50, effort: 3 } as const;
 const WEBP = { quality: 74, effort: 4 } as const;
@@ -57,23 +56,20 @@ export async function probeWidth(bytes: Uint8Array): Promise<number | null> {
  * on-demand route fill a single gap without redoing the whole ladder.
  */
 export async function generate(
-  originalPath: string,
+  originalKey: string,
   intrinsic: number,
   only?: { width: number; format: string }
 ): Promise<number> {
   const sharp = await loadSharp();
   if (!sharp) return 0;
-  if (!isConvertible(originalPath)) return 0;
+  if (!isConvertible(originalKey)) return 0;
 
-  const dir = dirname(originalPath);
-  const stem = basename(originalPath, extname(originalPath));
+  // The variants hang off the original's own key, extension replaced.
+  const stem = originalKey.replace(/\.[a-z0-9]+$/i, '');
 
-  let bytes: Buffer;
-  try {
-    bytes = await readFile(originalPath);
-  } catch {
-    return 0;
-  }
+  const source = await storage.get(originalKey);
+  if (!source) return 0;
+  const bytes = Buffer.from(source);
 
   const widths = only ? [only.width] : ladderFor(intrinsic);
   const formats = only ? [only.format] : [...VARIANT_FORMATS];
@@ -83,33 +79,24 @@ export async function generate(
     if (width > Math.min(intrinsic, MAX_WIDTH)) continue;
 
     for (const format of formats) {
-      const target = join(dir, `${stem}.${width}.${format}`);
+      const target = `${stem}.${width}.${format}`;
       // Already there: another save, an earlier run, or the on-demand route.
-      if (await exists(target)) continue;
+      if (await storage.exists(target)) continue;
 
       try {
         const pipeline = sharp(bytes).resize({ width, withoutEnlargement: true });
         const out =
           format === 'avif' ? await pipeline.avif(AVIF).toBuffer() : await pipeline.webp(WEBP).toBuffer();
-        await writeFile(target, out);
+        await storage.put(target, new Uint8Array(out), `image/${format}`);
         written++;
       } catch (e) {
         // One bad width must not cost the rest of the ladder.
-        console.warn(`[variants] ${basename(target)} overslaan:`, e);
+        console.warn(`[variants] ${target} overslaan:`, e);
       }
     }
   }
 
   return written;
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /**

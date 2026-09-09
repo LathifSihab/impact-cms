@@ -15,7 +15,8 @@
     "seed:pages": "node scripts/seed-pages.ts",
     "user:create": "node scripts/create-user.ts",
     "images:migrate": "node scripts/migrate-images.ts",
-    "images:variants": "node scripts/backfill-variants.ts"
+    "images:variants": "node scripts/backfill-variants.ts",
+    "storage:push": "node scripts/storage-push.ts"
   },
   "devDependencies": {
     "@sveltejs/adapter-node": "^5.5.7",

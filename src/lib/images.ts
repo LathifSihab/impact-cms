@@ -85,8 +85,17 @@ export interface Variants {
  * Returns null when the image has no variants — a legacy upload, a GIF, an
  * external URL — and the caller should render a plain `<img>` instead.
  */
-export function variants(src: string, role: ImageRole = 'card'): Variants | null {
-  if (!src || /^(https?:)?\/\//.test(src)) return null;
+export function variants(
+  stored: string,
+  role: ImageRole = 'card',
+  /* How a stored path becomes a URL. Passed in rather than imported, so this
+     module stays free of SvelteKit's env aliases — the maintenance scripts
+     import it under plain node, where those do not resolve. */
+  toUrl: (path: string) => string = (p) => p
+): Variants | null {
+  if (!stored || /^(https?:)?\/\//.test(stored)) return null;
+  // Columns hold both `/uploads/...` and, historically, `uploads/...`.
+  const src = stored.startsWith('/') ? stored : `/${stored}`;
   if (!src.startsWith('/uploads/')) return null;
   if (!CONVERTIBLE.test(src)) return null;
 
@@ -101,7 +110,7 @@ export function variants(src: string, role: ImageRole = 'card'): Variants | null
   return {
     sources: VARIANT_FORMATS.map((fmt) => ({
       type: `image/${fmt}`,
-      srcset: widths.map((w) => `${stem}.${w}.${fmt} ${w}w`).join(', ')
+      srcset: widths.map((w) => `${toUrl(`${stem}.${w}.${fmt}`)} ${w}w`).join(', ')
     })),
     sizes: ROLES[role]
   };

@@ -22,11 +22,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
+
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { COLLECTIONS, NAV_ORDER, type Field } from '../src/lib/collections.ts';
 import { envHelp } from './env-help.ts';
+import { storage, backend } from '../src/lib/server/storage.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -61,6 +62,15 @@ const db = createClient(url, serviceKey, {
 });
 
 const EXT_OK = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
+
+const CONTENT_TYPES: Record<string, string> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.gif': 'image/gif'
+};
 
 let copied = 0;
 let skipped = 0;
@@ -99,12 +109,11 @@ async function migrateValue(
   const bytes = readFileSync(onDisk);
   const digest = createHash('sha256').update(bytes).digest('hex').slice(0, 10);
   const name = `${field.replace(/[^a-z0-9-]/gi, '-')}-${digest}${ext === '.jpeg' ? '.jpg' : ext}`;
-  const dir = join(UPLOAD_DIR, table, recordId);
-  const publicPath = `/uploads/${table}/${recordId}/${name}`;
+  const key = `${table}/${recordId}/${name}`;
+  const publicPath = `/uploads/${key}`;
 
   if (!dryRun) {
-    await mkdir(dir, { recursive: true });
-    await writeFile(join(dir, name), bytes);
+    await storage.put(key, new Uint8Array(bytes), CONTENT_TYPES[ext] ?? 'application/octet-stream');
   }
   copied++;
   console.log(`  ${dryRun ? 'zou kopiëren' : 'gekopieerd'}  ${basename(onDisk)} -> ${publicPath}`);
@@ -112,7 +121,7 @@ async function migrateValue(
 }
 
 console.log(`\nBron:   ${SOURCE}${existsSync(SOURCE) ? '' : '  (bestaat niet)'}`);
-console.log(`Doel:   ${UPLOAD_DIR}`);
+console.log(`Doel:   ${backend()}${backend() === 'disk' ? ` (${UPLOAD_DIR})` : ''}`);
 if (dryRun) console.log('Modus:  dry run, er wordt niets geschreven');
 console.log('');
 

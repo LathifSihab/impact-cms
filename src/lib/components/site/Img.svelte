@@ -31,7 +31,10 @@
   } = $props();
 
   const resolved = $derived(imageUrl(src));
-  const set = $derived(resolved ? variants(resolved, role) : null);
+  /* variants() reads the STORED path, not the resolved one: the stored value is
+     what carries the /uploads/ prefix and the intrinsic width, and mapping it to
+     a bucket URL first would hide both. */
+  const set = $derived(src ? variants(src, role, imageUrl) : null);
 </script>
 
 {#if set}

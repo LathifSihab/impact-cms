@@ -115,12 +115,15 @@ port = 54364
 [storage]
 enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
-file_size_limit = "50MiB"
+file_size_limit = "64MiB"
 
-# Uncomment to configure local storage buckets
-# [storage.buckets.images]
-# public = false
-# file_size_limit = "50MiB"
+# The uploads bucket. Public because these are the images on the public site:
+# a signed URL per image would mean a round trip through our own server for
+# every photo, which is exactly the cost moving to Storage is meant to avoid.
+# Writes are service-role only — the anon key cannot upload.
+[storage.buckets.uploads]
+public = true
+file_size_limit = "64MiB"
 # allowed_mime_types = ["image/png", "image/jpeg"]
 # objects_path = "./images"
 

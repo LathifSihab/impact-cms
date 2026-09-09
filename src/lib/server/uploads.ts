@@ -20,18 +20,13 @@
  */
 
 import { createHash, randomBytes } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
-import { dirname, extname, join, normalize, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { extname } from 'node:path';
 import { env } from '$env/dynamic/private';
+import { storage, publicUrlFor, uploadDir, backend } from './storage';
 import { intrinsicWidth, isConvertible, LADDER, MAX_WIDTH, VARIANT_FORMATS } from '../images';
 import { generate, normalise } from './variants';
 
-const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..');
-
-/** Where files live. Configurable so a deploy can point at a mounted volume. */
-export const UPLOAD_DIR = env.UPLOAD_DIR ? resolve(env.UPLOAD_DIR) : join(appRoot, 'uploads');
+export { uploadDir, backend };
 
 /** URL prefix the serving route listens on. */
 export const UPLOAD_URL_PREFIX = '/uploads';
@@ -134,9 +129,7 @@ export async function save(
     throw new UploadError(`Maximaal ${Math.floor(ceiling / (1024 * 1024))} MB voor dit bestandstype.`);
   }
 
-  const dir = join(UPLOAD_DIR, safeSegment(collection), safeSegment(recordId));
-  await mkdir(dir, { recursive: true });
-
+  const folder = `${safeSegment(collection)}/${safeSegment(recordId)}`;
   const ext = ALLOWED[detected];
 
   /* A photo is downscaled to the widest size the site ever renders, and its
@@ -156,16 +149,16 @@ export async function save(
   const digest = createHash('sha256').update(stored).digest('hex').slice(0, 10);
   const base = `${safeSegment(field)}-${digest}`;
   const name = width ? `${base}-${width}${ext}` : `${base}${ext}`;
-  const onDisk = join(dir, name);
-  await writeFile(onDisk, stored);
+  const key = `${folder}/${name}`;
+  await storage.put(key, stored, detected);
 
   /* Generating the ladder now keeps the first visitor off the slow path. It is
      deliberately not awaited into the failure path: if the encoder gives up,
      the upload still succeeded and the image still renders, just at one size. */
-  if (width) await generate(onDisk, width);
+  if (width) await generate(key, width);
 
   return {
-    path: `${UPLOAD_URL_PREFIX}/${safeSegment(collection)}/${safeSegment(recordId)}/${name}`,
+    path: `${UPLOAD_URL_PREFIX}/${key}`,
     bytes: stored.byteLength,
     type: detected
   };
@@ -176,18 +169,32 @@ export function isManaged(value: unknown): boolean {
   return typeof value === 'string' && value.startsWith(UPLOAD_URL_PREFIX + '/');
 }
 
-/**
- * Resolve a public path to a file on disk, refusing anything outside the root.
- *
- * The check is on the resolved absolute path rather than on the input string,
- * because encoded traversal and symlinked segments both survive naive
- * inspection of the text.
- */
-export function resolveOnDisk(relative: string): string | null {
-  const cleaned = normalize(relative).replace(/^([/\\])+/, '');
-  const full = resolve(UPLOAD_DIR, cleaned);
-  if (full !== UPLOAD_DIR && !full.startsWith(UPLOAD_DIR + sep)) return null;
-  return existsSync(full) ? full : null;
+/** Strip the /uploads prefix and any leading slash: the storage key. */
+export function keyFor(publicPathOrRelative: string): string {
+  const withoutPrefix = publicPathOrRelative.startsWith(UPLOAD_URL_PREFIX + '/')
+    ? publicPathOrRelative.slice(UPLOAD_URL_PREFIX.length)
+    : publicPathOrRelative;
+  const cleaned = withoutPrefix.replace(/^\/+/, '');
+  // Traversal is refused here rather than deeper: a key never contains "..".
+  return cleaned.split('/').some((seg) => seg === '..' || seg === '.') ? '' : cleaned;
+}
+
+/** The bytes behind a stored path, or null. */
+export async function read(publicPathOrKey: string): Promise<Uint8Array | null> {
+  const key = keyFor(publicPathOrKey);
+  return key ? storage.get(key) : null;
+}
+
+/** True when a stored path has something behind it. */
+export async function has(publicPathOrKey: string): Promise<boolean> {
+  const key = keyFor(publicPathOrKey);
+  return key ? storage.exists(key) : false;
+}
+
+/** The URL a browser should fetch this stored path from. */
+export function publicUrl(publicPathOrKey: string): string {
+  const key = keyFor(publicPathOrKey);
+  return key ? publicUrlFor(key) : '';
 }
 
 export function contentTypeFor(path: string): string {
@@ -205,7 +212,7 @@ export function contentTypeFor(path: string): string {
  * asking for ten thousand arbitrary sizes.
  */
 export async function ensureVariant(requested: string): Promise<string | null> {
-  const m = requested.match(/^(.*)\.(\d{2,5})\.(avif|webp)$/i);
+  const m = keyFor(requested).match(/^(.*)\.(\d{2,5})\.(avif|webp)$/i);
   if (!m) return null;
 
   const [, stem, widthText, format] = m;
@@ -215,9 +222,13 @@ export async function ensureVariant(requested: string): Promise<string | null> {
   }
 
   // The original keeps its own extension, so try each one we accept.
-  const original = ['.jpg', '.jpeg', '.png', '.webp', '.avif']
-    .map((ext) => resolveOnDisk(stem + ext))
-    .find(Boolean);
+  let original = '';
+  for (const ext of ['.jpg', '.jpeg', '.png', '.webp', '.avif']) {
+    if (await storage.exists(stem + ext)) {
+      original = stem + ext;
+      break;
+    }
+  }
   if (!original) return null;
 
   const intrinsic = intrinsicWidth(original);
@@ -229,7 +240,7 @@ export async function ensureVariant(requested: string): Promise<string | null> {
   if (!allowed) return null;
 
   const written = await generate(original, intrinsic, { width, format: format.toLowerCase() });
-  return written > 0 ? resolveOnDisk(requested) : null;
+  return written > 0 ? keyFor(requested) : null;
 }
 
 /**
@@ -240,18 +251,17 @@ export async function ensureVariant(requested: string): Promise<string | null> {
  */
 export async function remove(publicPath: string): Promise<void> {
   if (!isManaged(publicPath)) return;
-  const relative = publicPath.slice(UPLOAD_URL_PREFIX.length);
-  const onDisk = resolveOnDisk(relative);
-  if (onDisk) await rm(onDisk, { force: true });
+  const key = keyFor(publicPath);
+  if (!key) return;
+  await storage.del(key);
 
-  const intrinsic = intrinsicWidth(relative);
+  const intrinsic = intrinsicWidth(key);
   if (!intrinsic) return;
 
-  const stem = relative.replace(/\.[a-z0-9]+$/i, '');
+  const stem = key.replace(/\.[a-z0-9]+$/i, '');
   for (const width of [...LADDER, Math.min(intrinsic, MAX_WIDTH)]) {
     for (const format of VARIANT_FORMATS) {
-      const variant = resolveOnDisk(`${stem}.${width}.${format}`);
-      if (variant) await rm(variant, { force: true });
+      await storage.del(`${stem}.${width}.${format}`);
     }
   }
 }
@@ -259,8 +269,7 @@ export async function remove(publicPath: string): Promise<void> {
 /** Remove a whole record's folder, used when the record itself is deleted. */
 export async function removeRecordFolder(collection: string, recordId: string): Promise<void> {
   try {
-    const dir = join(UPLOAD_DIR, safeSegment(collection), safeSegment(recordId));
-    if (dir.startsWith(UPLOAD_DIR + sep)) await rm(dir, { recursive: true, force: true });
+    await storage.removePrefix(`${safeSegment(collection)}/${safeSegment(recordId)}`);
   } catch {
     // A failed cleanup must never block deleting the record itself.
   }
@@ -269,8 +278,7 @@ export async function removeRecordFolder(collection: string, recordId: string): 
 /** Files currently in a record's folder — used by the orphan check in tests. */
 export async function listRecordFiles(collection: string, recordId: string): Promise<string[]> {
   try {
-    const dir = join(UPLOAD_DIR, safeSegment(collection), safeSegment(recordId));
-    return await readdir(dir);
+    return await storage.list(`${safeSegment(collection)}/${safeSegment(recordId)}`);
   } catch {
     return [];
   }
