@@ -24,6 +24,9 @@
         <a href="/admin/signalen" aria-current={current.startsWith('/admin/signalen') ? 'page' : undefined}>
           Signalen
         </a>
+        <a href="/admin/bezoek" aria-current={current.startsWith('/admin/bezoek') ? 'page' : undefined}>
+          Bezoek
+        </a>
         <a href="/admin/pages" aria-current={current.startsWith('/admin/pages') ? 'page' : undefined}>
           Pagina's
         </a>
