@@ -965,10 +965,10 @@
           novalidate
           name={str(c, 'formName') || 'contact'}
           action="/api/subscribe"
-          data-netlify="true"
-          {...{ 'netlify-honeypot': 'bot-field' }}
         >
           <input type="hidden" name="form-name" value={str(c, 'formName') || 'contact'} />
+          <!-- The honeypot. /api/subscribe answers 200 when it is filled, so a
+               bot learns nothing from the difference. -->
           <input type="hidden" name="bot-field" />
           {#if str(c, 'formRunning')}<span class="running">{str(c, 'formRunning')}</span>{/if}
           {#if str(c, 'formHeading')}
@@ -1249,10 +1249,10 @@
           novalidate
           name="newsletter"
           action="/api/subscribe"
-          data-netlify="true"
-          {...{ 'netlify-honeypot': 'bot-field' }}
         >
           <input type="hidden" name="form-name" value="newsletter" />
+          <!-- The honeypot. /api/subscribe answers 200 when it is filled, so a
+               bot learns nothing from the difference. -->
           <input type="hidden" name="bot-field" />
           <div class="field-row">
             {#if !twoCol}
