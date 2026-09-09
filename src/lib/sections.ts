@@ -31,7 +31,8 @@ export type SectionType =
   | 'cine'
   | 'vcards'
   | 'mosaic'
-  | 'legal';
+  | 'legal'
+  | 'metabar';
 
 export type Ground = 'white' | 'sand' | 'black' | 'red';
 
@@ -177,6 +178,11 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { name: 'value', label: 'Waarde' }
         ]
       },
+      { name: 'calloutRunning', label: 'Kader — bovenschrift', kind: 'text' },
+      { name: 'calloutTitle', label: 'Kader — titel', kind: 'text', help: 'Een | maakt het deel erna rood.' },
+      { name: 'calloutBody', label: 'Kader — tekst', kind: 'textarea' },
+      { name: 'calloutLinkLabel', label: 'Kader — linktekst', kind: 'text' },
+      { name: 'calloutLinkHref', label: 'Kader — link', kind: 'text' },
       { name: 'asideRunning', label: 'Rechts — bovenschrift', kind: 'text' },
       { name: 'quote', label: 'Rechts — citaat', kind: 'textarea' },
       { name: 'cite', label: 'Rechts — bron', kind: 'text' },
@@ -229,6 +235,32 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         label: 'Tweede alinea',
         kind: 'textarea',
         help: 'Alleen de horizontale strip gebruikt een tweede alinea.'
+      },
+      {
+        name: 'group',
+        label: 'Welke groep',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Alle' },
+          { value: 'forAll', label: 'Cijfers — IMPACT FOR ALL' },
+          { value: 'reach', label: 'Cijfers — bereik' }
+        ],
+        help: 'De cijfers staan in één lijst met twee groepen: deelname op Social Impact, bereik op Samenwerken.'
+      },
+      {
+        name: 'grid',
+        label: 'Rasterbreedte',
+        kind: 'select',
+        options: [
+          { value: '', label: 'Standaard' },
+          { value: 'stats--3', label: 'Drie cijfers naast elkaar' }
+        ]
+      },
+      {
+        name: 'period',
+        label: 'Periode naast de titel',
+        kind: 'text',
+        help: 'De regel onder de titel bij cijfers — waarover ze gemeten zijn.'
       },
       {
         name: 'note',
@@ -721,6 +753,31 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     ]
   },
 
+  /* The bar of specifics directly under the hero — who it is for, how long,
+     what age — with one call to action. It sits between the header and the
+     first section on the site, so it renders unwrapped: it carries its own
+     background and a section wrapper would push it away from the hero. */
+  metabar: {
+    type: 'metabar',
+    label: 'Specificatiebalk',
+    blurb: 'De regel met kerngegevens onder de hero, met één knop.',
+    summary: 'ctaLabel',
+    fields: [
+      {
+        name: 'pairs',
+        label: 'Gegevens',
+        kind: 'rows',
+        addLabel: 'Gegeven toevoegen',
+        columns: [
+          { name: 'k', label: 'Wat' },
+          { name: 'v', label: 'Waarde' }
+        ]
+      },
+      { name: 'ctaLabel', label: 'Knoptekst', kind: 'text' },
+      { name: 'ctaHref', label: 'Knoplink', kind: 'text' }
+    ]
+  },
+
   news_band: {
     type: 'news_band',
     label: 'Nieuwsbriefbalk',
@@ -763,7 +820,8 @@ export const SECTION_ORDER: SectionType[] = [
   'cine',
   'vcards',
   'mosaic',
-  'legal'
+  'legal',
+  'metabar'
 ];
 
 export function sectionDef(type: string): SectionDef | undefined {

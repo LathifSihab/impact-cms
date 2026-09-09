@@ -179,6 +179,30 @@
               {/if}
             </div>
           {/if}
+          {#if str(c, 'calloutTitle') || str(c, 'calloutBody')}
+            {@const parts = str(c, 'calloutTitle').split('|')}
+            <div class="callout">
+              {#if str(c, 'calloutRunning')}
+                <span class="running">{str(c, 'calloutRunning')}</span>
+              {/if}
+              {#if str(c, 'calloutTitle')}
+                <p class="h" style="margin-top:14px">
+                  {parts[0].trim()}{#if parts.length > 1}
+                    <span class="red">{parts.slice(1).join('|').trim()}</span>
+                  {/if}
+                </p>
+              {/if}
+              {#if str(c, 'calloutBody')}
+                <p class="body" style="margin-top:10px">
+                  {str(c, 'calloutBody')}{#if str(c, 'calloutLinkLabel')}
+                    <a href={str(c, 'calloutLinkHref') || '#'} style="color:var(--red);font-weight:600"
+                      >{str(c, 'calloutLinkLabel')}</a
+                    >
+                  {/if}
+                </p>
+              {/if}
+            </div>
+          {/if}
           {#if list(c, 'practical').length}
             <div class="practical" style="margin-top:28px">
               {#each list(c, 'practical') as row (row.label)}
@@ -312,11 +336,15 @@
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
       <div class="wrap">
         {#if str(c, 'running') || str(c, 'heading')}
-          <div class="sec-head" data-reveal>
+          <div class="sec-head" class:sec-head--stack={!!str(c, 'period')} data-reveal>
             <div>
               {#if str(c, 'running')}<span class="running">{str(c, 'running')}</span>{/if}
               {#if str(c, 'heading')}<h2 class={headClass(c)}>{str(c, 'heading')}</h2>{/if}
             </div>
+            {#if str(c, 'period')}
+              <!-- What the figures are measured over: its own line, not a lead. -->
+              <p class="stat-period">{str(c, 'period')}</p>
+            {/if}
             {#if str(c, 'lead2')}
               <div class="measure-2">
                 <p class="body">{str(c, 'lead')}</p>
@@ -408,17 +436,20 @@
         {:else if how(c) === 'stats'}
           <!-- data-counters is what main.js counts up from zero; without
                data-count and data-suffix the figures just sit there. -->
-          <div class="stats stats--3" data-counters>
+          <div class={str(c, 'grid') ? `stats ${str(c, 'grid')}` : 'stats'} data-counters>
             {#each items as it (it.id)}
               <div class="stat">
                 <div class="n" data-count={it.meta?.count ?? undefined} data-suffix={it.meta?.suffix ?? undefined}>
                   {it.meta?.count ? '0' : it.title}
                 </div>
                 <div class="k">{it.subtitle}</div>
-                {#if it.body}<p class="body">{it.body}</p>{/if}
+                <!-- .e, not .body: the explanation under a figure is its own
+                     smaller type on the site. -->
+                {#if it.body}<p class="e">{it.body}</p>{/if}
               </div>
             {/each}
           </div>
+          {#if str(c, 'note')}<p class="stat-note">{str(c, 'note')}</p>{/if}
         {:else if how(c) === 'event_rows'}
           <!-- The same row the events overview renders: the link covers the
                editie, and the call to action sits OUTSIDE it, because a link
@@ -638,6 +669,7 @@
     {@const style = str(c, 'style') || 'routes'}
     {@const routes = style === 'routes'}
     {@const cards = style === 'steps' || style === 'options'}
+    {@const bare = style === 'format_rows' || style === 'contrib'}
     <section class={groundClass(s.ground)} id={s.anchor || undefined}>
       <div class="wrap">
         {#if str(c, 'running') || str(c, 'heading')}
@@ -649,19 +681,10 @@
             {#if str(c, 'lead')}<p class="body">{str(c, 'lead')}</p>{/if}
           </div>
         {/if}
-        <!-- Steps and options are both .cards-3; only the numbering differs. -->
-        <!-- Three or four across, as the page authored it. -->
-        <div
-          class={style === 'format_rows'
-            ? undefined
-            : style === 'contrib'
-              ? undefined
-              : cards
-                ? str(c, 'grid') || 'cards-3'
-                : routes
-                  ? 'routes'
-                  : 'layers'}
-        >
+        <!-- Format rows and contribution rows are direct children of .wrap on
+             the site; only the card and route styles sit in a grid. Steps and
+             options share .cards-3, three or four across as authored. -->
+        {#snippet rows()}
           {#each list(c, 'items') as item, i (item.title)}
             {@const n = String(i + 1).padStart(2, '0')}
             {#if style === 'contrib'}
@@ -701,7 +724,14 @@
               </div>
             {/if}
           {/each}
-        </div>
+        {/snippet}
+        {#if bare}
+          {@render rows()}
+        {:else}
+          <div class={cards ? str(c, 'grid') || 'cards-3' : routes ? 'routes' : 'layers'}>
+            {@render rows()}
+          </div>
+        {/if}
       </div>
     </section>
 
@@ -1169,6 +1199,22 @@
         </aside>
       </div>
     </section>
+
+  {:else if s.type === 'metabar'}
+    <!-- No <section>: it carries its own background and sits tight under the
+         hero, so a section's padding would push it away from it. -->
+    <div class="metabar" id={s.anchor || undefined}>
+      <div class="wrap">
+        <div class="pairs">
+          {#each list(c, 'pairs') as pair (pair.k)}
+            <div><div class="k">{pair.k}</div><div class="v">{pair.v}</div></div>
+          {/each}
+        </div>
+        {#if str(c, 'ctaLabel') && str(c, 'ctaHref')}
+          <a href={str(c, 'ctaHref')} class="pill pill--primary">{str(c, 'ctaLabel')}</a>
+        {/if}
+      </div>
+    </div>
 
   {:else if s.type === 'news_band'}
     {@const twoCol = str(c, 'style') === 'two_col'}

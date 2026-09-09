@@ -58,6 +58,10 @@ if (!url || !serviceKey) {
    hardcoding which page is which. */
 let FORMAT_NAMES: string[] = [];
 
+/* Figure label -> its group. Two sections read the same table, and which group
+   each shows is read off the labels it prints. */
+const FIGURE_GROUPS = new Map<string, string>();
+
 const SITE = process.env.IMPACT_SITE_DIR
   ? resolve(process.env.IMPACT_SITE_DIR)
   : resolve(root, '..', 'site');
@@ -285,6 +289,12 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
        formats — Samenwerken hand-writes five rows of its own ("Partner
        [worden]") in exactly the same shape. Comparing the names against the
        real records is what tells them apart, rather than hardcoding pages. */
+    /* The example box that can sit inside either shape of two-column block.
+       It nests no div of its own, so the first closing tag really is its. */
+    const calloutBlock = inner.match(/<div class="callout">([\s\S]*?)<\/div>/);
+    const callout = calloutBlock ? calloutBlock[1] : '';
+    const calloutLink = callout.match(/<a href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+
     const rowNames = [...inner.matchAll(/<span class="name">([\s\S]*?)<\/span>/g)].map((x) =>
       decode(x[1].replace(/<[^>]+>/g, ' '))
     );
@@ -341,7 +351,9 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
            render it back, so it is preserved and rendered as HTML. */
         title:
           style === 'format_rows'
-            ? (row[1].match(/<span class="name">([\s\S]*?)<\/span>/) ?? ['', ''])[1].trim()
+            ? (row[1].match(
+                /<span class="name">((?:[^<]|<span[^>]*>[\s\S]*?<\/span>)*)<\/span>/
+              ) ?? ['', ''])[1].trim()
             : first(row[1], /<h3[^>]*>([\s\S]*?)<\/h3>/),
         body:
           first(row[1], /<p class="body[^"]*">([\s\S]*?)<\/p>/) ||
@@ -384,7 +396,9 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
         : []),
       ['tier-table', 'tiers', 'tier_table'],
       ['logo-grid', 'partners', 'logo_grid'],
-      ['stats--3', 'figures', 'stats']
+      // no closing quote: the bar is class="stats" on one page and
+      // class="stats stats--3" on the other.
+      ['class="stats', 'figures', 'stats']
     ];
     /* The team block also holds an expert-grid, but it is more than one: it
        carries the core-team cards and two headings around the grid. It has its
@@ -397,6 +411,12 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
          bar. Reading both means the section round-trips rather than losing half
          its copy the first time someone saves it. */
       const introBlock = inner.match(/<div class="measure-2 strip-intro">([\s\S]*?)<\/div>/);
+      /* A section head can also hold its two paragraphs in a plain .measure-2,
+         which is what the partnership block on Samenwerken does. */
+      const measureBlock = inner.match(/<div class="measure-2">([\s\S]*?)<\/div>/);
+      const measure = measureBlock
+        ? [...measureBlock[1].matchAll(/<p class="body">([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]))
+        : [];
       const paras = introBlock
         ? [...introBlock[1].matchAll(/<p class="body">([\s\S]*?)<\/p>/g)].map((x) => decode(x[1]))
         : [];
@@ -413,9 +433,20 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
           headingStyle: headingStyleOf(inner),
-          lead: paras[0] ?? first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          lead: paras[0] ?? measure[0] ?? first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          lead2: paras[1] ?? measure[1] ?? '',
+          period: first(inner, /<p class="stat-period">([\s\S]*?)<\/p>/),
+          /* Two sections read the same figures table; each takes its own slice,
+             counted from what the page actually printed. */
+          /* Which group of figures this block shows, read from the first
+             label it prints rather than from its position in the file. */
+          group: (() => {
+            const labels = [...inner.matchAll(/<div class="k">([\s\S]*?)<\/div>/g)].map((x) => decode(x[1]));
+            return labels[0] ? (FIGURE_GROUPS.get(labels[0]) ?? '') : '';
+          })(),
+          grid: inner.includes('stats--3') ? 'stats--3' : '',
+          note: first(inner, /<p class="stat-note">([\s\S]*?)<\/p>/) || first(inner, /<p class="(?:body note|note body)">([\s\S]*?)<\/p>/),
           note: first(inner, /<p class="(?:body note|note body)">([\s\S]*?)<\/p>/),
-          lead2: paras[1] ?? '',
           ctaLabel: foot ? decode(foot[2]) : '',
           ctaHref: foot ? localise(foot[1]) : '',
           source: match[1],
@@ -692,6 +723,25 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
                it here is the difference between that section having its image
                and quietly losing it. */
             image: (inner.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+            calloutRunning: callout ? first(callout, /<span class="running">([\s\S]*?)<\/span>/) : '',
+            calloutTitle: (() => {
+              if (!callout) return '';
+              const t = callout.match(/<p class="h"[^>]*>([\s\S]*?)<\/p>/);
+              if (!t) return '';
+              const red = first(t[1], /<span class="red">([\s\S]*?)<\/span>/);
+              const plain = decode(t[1].replace(/<span class="red">[\s\S]*?<\/span>/, '')).trim();
+              return red ? `${plain} | ${red}` : plain;
+            })(),
+            calloutBody: callout
+              ? decode(
+                  (callout.match(/<p class="body"[^>]*>([\s\S]*?)<\/p>/) ?? ['', ''])[1].replace(
+                    /<a[^>]*>[\s\S]*?<\/a>/,
+                    ''
+                  )
+                ).trim()
+              : '',
+            calloutLinkLabel: calloutLink ? decode(calloutLink[2]) : '',
+            calloutLinkHref: calloutLink ? localise(calloutLink[1]) : '',
             practical: [...inner.matchAll(/<div class="row"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/div>/g)].map(
               (r) => ({ label: decode(r[1]), value: decode(r[2]) })
             ),
@@ -733,6 +783,25 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
           body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
           ticks,
           image: imgSrc,
+          calloutRunning: callout ? first(callout, /<span class="running">([\s\S]*?)<\/span>/) : '',
+          calloutTitle: (() => {
+            if (!callout) return '';
+            const t = callout.match(/<p class="h"[^>]*>([\s\S]*?)<\/p>/);
+            if (!t) return '';
+            const red = first(t[1], /<span class="red">([\s\S]*?)<\/span>/);
+            const plain = decode(t[1].replace(/<span class="red">[\s\S]*?<\/span>/, '')).trim();
+            return red ? `${plain} | ${red}` : plain;
+          })(),
+          calloutBody: callout
+            ? decode(
+                (callout.match(/<p class="body"[^>]*>([\s\S]*?)<\/p>/) ?? ['', ''])[1].replace(
+                  /<a[^>]*>[\s\S]*?<\/a>/,
+                  ''
+                )
+              ).trim()
+            : '',
+          calloutLinkLabel: calloutLink ? decode(calloutLink[2]) : '',
+          calloutLinkHref: calloutLink ? localise(calloutLink[1]) : '',
           layout: 'media',
           imageSide: imageFirst ? 'left' : 'right',
           ctaLabel: first(inner, /<a href="[^"]*" class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/),
@@ -891,6 +960,30 @@ function extractSections(html: string, locale: 'nl' | 'en' = 'nl'): { sections: 
     // Genuinely bespoke markup with no section type behind it.
     const label = anchor ? `#${anchor}` : (heading || 'naamloze sectie');
     skipped.push(label.slice(0, 60));
+  }
+
+  /* The spec bar sits between </header> and the first <section>, so the loop
+     above never sees it — the same blind spot the partner marquee had. */
+  const barStart = html.indexOf('<div class="metabar">');
+  if (barStart !== -1) {
+    /* Slice to the next <section rather than trying to close three nested divs
+       with a regex — the pairs each hold two divs of their own. */
+    const barEnd = html.indexOf('<section', barStart);
+    const bar = html.slice(barStart, barEnd === -1 ? undefined : barEnd);
+    const cta = bar.match(/<a href="([^"]+)"[^>]*class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/);
+    sections.unshift({
+      type: 'metabar',
+      ground: 'white',
+      anchor: '',
+      content: {
+        pairs: [...bar.matchAll(/<div class="k">([\s\S]*?)<\/div><div class="v">([\s\S]*?)<\/div>/g)].map((m) => ({
+          k: decode(m[1]),
+          v: decode(m[2])
+        })),
+        ctaLabel: cta ? decode(cta[2]) : '',
+        ctaHref: cta ? localise(cta[1]) : ''
+      }
+    });
   }
 
   /* The scrolling partner band sits BETWEEN the last </section> and the
@@ -1095,6 +1188,9 @@ function restoreUploads(value: unknown, path: string, keep: Map<string, string>)
   FORMAT_NAMES = (data ?? []).flatMap((f: Record<string, string>) =>
     [f.bracket_name, f.name].filter(Boolean)
   );
+
+  const { data: figures } = await db.from('figures').select('label, group_key');
+  for (const f of (figures ?? []) as Record<string, string>[]) FIGURE_GROUPS.set(f.label, f.group_key);
 }
 
 console.log(`\nPagina's uit ${SITE}\n`);

@@ -240,6 +240,13 @@ export async function resolveCollections(
 
       let query = db.from(def.table).select(def.select).order(def.order, { ascending: def.asc });
 
+      /* Figures are one table with two groups — participation on Social
+         Impact, reach on Samenwerken — and 03-DATA-MODEL models that as a
+         `group` enum. Filtering on it rather than on an ordinal offset means
+         reordering the list cannot silently move a figure to the other page. */
+      const group = String(s.content?.group ?? '').trim();
+      if (group) query = query.eq('group_key', group);
+
       const limitRaw = String(s.content?.limit ?? '').trim();
       const limit = limitRaw ? Number(limitRaw) : NaN;
       if (Number.isFinite(limit) && limit > 0) query = query.limit(limit);
