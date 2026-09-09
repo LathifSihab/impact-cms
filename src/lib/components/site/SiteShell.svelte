@@ -4,11 +4,11 @@
    * are the same product rather than a lookalike: utility bar, nav with
    * dropdowns, mobile menu, footer, newsletter dome.
    *
-   * Only Events and Journal are served by this app. Every other destination —
-   * Over, Samenwerken, Social Impact, Media, Contact, Privacy, Hosted
-   * Experiences, the brochure — still lives in the static build, so those links
-   * point at it through `ext()`. The nav therefore behaves complete while being
-   * honest about which half serves what.
+   * Every page is served by this app now, so `ext()` resolves the whole nav
+   * internally. It keeps the fallback for a slug that is not configured yet —
+   * a link to a page nobody has made should reach the static build rather than
+   * 404 — and it serves assets like the brochure from here, unprefixed,
+   * because an asset has no Dutch and English copy to choose between.
    */
   import { page } from '$app/state';
   import type { Locale } from '$lib/collections';
@@ -55,7 +55,11 @@
       return slug === 'home' ? p('/') + hash : p(`/${slug}`) + hash;
     }
 
-    // Not served here: the brochure, or a page not configured yet.
+    /* An asset is not a page: it has no Dutch and English copy, so it must not
+       take the /en prefix. It did, and the English brochure link 404'd. */
+    if (file.startsWith('assets/')) return `/${file}`;
+
+    // Not served here: a page not configured yet.
     const base = staticBase.replace(/\/$/, '');
     const prefix = locale === 'en' ? '/en' : '';
     return base ? `${base}${prefix}/${file}` : `${prefix}/${file}`;
