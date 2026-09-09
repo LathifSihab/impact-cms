@@ -84,13 +84,49 @@ const running: SectionField = {
 };
 const lead: SectionField = { name: 'lead', label: 'Inleiding', kind: 'textarea' };
 
+/* The site sizes a section title to how long it is, and occasionally pushes it
+   right. These are the modifiers the stylesheet already defines; offering them
+   as a list keeps a section looking like its counterpart on the static site
+   without anyone typing a class name. */
+const headingStyle: SectionField = {
+  name: 'headingStyle',
+  label: 'Titelformaat',
+  kind: 'select',
+  options: [
+    { value: '', label: 'Standaard' },
+    { value: 'd-l--60', label: 'Groot (60)' },
+    { value: 'd-l--48', label: 'Middel (48)' },
+    { value: 'd-l--40', label: 'Klein (40)' },
+    { value: 'align-right', label: 'Rechts uitgelijnd' }
+  ]
+};
+
+/* The small link that sits on the right of a section head — "Alle events",
+   "Ontdek journal". Rendered as the site's .tlink. */
+const headLink: SectionField[] = [
+  { name: 'ctaLabel', label: 'Linktekst naast de titel', kind: 'text' },
+  { name: 'ctaHref', label: 'Link naast de titel', kind: 'text', placeholder: '/events' }
+];
+
 export const SECTIONS: Record<SectionType, SectionDef> = {
   sec_head: {
     type: 'sec_head',
     label: 'Sectiekop',
     blurb: 'Bovenschrift, titel en een inleidende alinea ernaast. De standaardkop op de site.',
     summary: 'heading',
-    fields: [running, heading, lead]
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      lead,
+      ...headLink,
+      {
+        name: 'note',
+        label: 'Voetnoot',
+        kind: 'textarea',
+        help: 'Kleine tekst onder de sectie, zoals de wachtlijst-uitleg op de homepage.'
+      }
+    ]
   },
 
   rich_text: {
@@ -121,6 +157,16 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
       { name: 'ticks', label: 'Opsomming', kind: 'tags', help: 'De aangevinkte punten.' },
       { name: 'image', label: 'Afbeelding', kind: 'image' },
       {
+        name: 'layout',
+        label: 'Beeldverhouding',
+        kind: 'select',
+        options: [
+          { value: 'media', label: 'Beeld op halve breedte' },
+          { value: 'plain', label: 'Beeld in eigen kolom' }
+        ],
+        help: 'De homepage zet het beeld in een eigen kolom; de eventpagina op halve breedte.'
+      },
+      {
         name: 'imageSide',
         label: 'Beeld aan',
         kind: 'select',
@@ -145,6 +191,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     fields: [
       running,
       heading,
+      headingStyle,
       lead,
       {
         name: 'source',
@@ -158,6 +205,12 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
         label: 'Tweede alinea',
         kind: 'textarea',
         help: 'Alleen de horizontale strip gebruikt een tweede alinea.'
+      },
+      {
+        name: 'note',
+        label: 'Voetnoot onder de lijst',
+        kind: 'textarea',
+        help: 'Kleine tekst onder de items, zoals de wachtlijst-uitleg op de homepage.'
       },
       { name: 'ctaLabel', label: 'Linktekst onderaan', kind: 'text' },
       { name: 'ctaHref', label: 'Link onderaan', kind: 'text', placeholder: '/over#fundamenten' },
@@ -176,6 +229,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
           { value: 'event_rows', label: 'Eventrijen' },
           { value: 'journal_cards', label: 'Journalkaarten' },
           { value: 'logos', label: 'Logowand' },
+          { value: 'marquee', label: 'Lopende logoband' },
           { value: 'stats', label: 'Cijfers' }
         ],
         help: 'Hoe de records eruitzien. Laat op standaard als je twijfelt.'
@@ -219,6 +273,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     fields: [
       running,
       heading,
+      headingStyle,
       { name: 'ctaLabel', label: 'Knoptekst', kind: 'text' },
       { name: 'ctaHref', label: 'Knoplink', kind: 'text' }
     ]
@@ -232,6 +287,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     fields: [
       running,
       heading,
+      headingStyle,
       {
         name: 'items',
         label: 'Bestanden',
@@ -270,6 +326,8 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     fields: [
       running,
       heading,
+      headingStyle,
+      lead,
       {
         name: 'style',
         label: 'Stijl',
@@ -303,6 +361,7 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     fields: [
       running,
       heading,
+      headingStyle,
       { name: 'body', label: 'Tekst', kind: 'textarea' },
       { name: 'word', label: 'Achtergrondwoord', kind: 'text', placeholder: 'ECHT' },
       {
@@ -347,7 +406,22 @@ export const SECTIONS: Record<SectionType, SectionDef> = {
     label: 'Nieuwsbriefbalk',
     blurb: 'De inschrijfbalk voor de nieuwsbrief.',
     summary: 'heading',
-    fields: [heading, { name: 'body', label: 'Tekst', kind: 'textarea' }]
+    fields: [
+      running,
+      heading,
+      headingStyle,
+      { name: 'body', label: 'Tekst', kind: 'textarea' },
+      {
+        name: 'style',
+        label: 'Weergave',
+        kind: 'select',
+        options: [
+          { value: 'band', label: 'Smalle balk' },
+          { value: 'two_col', label: 'Twee kolommen (homepage)' }
+        ],
+        help: 'De homepage en Hosted Experiences zetten het formulier naast de tekst.'
+      }
+    ]
   }
 };
 

@@ -44,21 +44,34 @@ export const actions: Actions = {
         .map((line) => line.trim())
         .filter(Boolean);
 
-    let heroImage = str('hero_image');
-    const heroFile = form.get('hero_image__file');
-    const heroCleared = form.get('hero_image__clear') != null;
-    if (heroFile && typeof heroFile === 'object' && (heroFile as File).size > 0) {
-      try {
-        const saved = await save('pages', `${params.id}-${locale}`, 'hero', heroFile as File);
-        if (heroImage && heroImage !== saved.path && isManaged(heroImage)) orphaned.push(heroImage);
-        heroImage = saved.path;
-      } catch (e) {
-        errors.hero_image = e instanceof UploadError ? e.message : 'Uploaden is niet gelukt.';
+    /* The hero still, and the optional aftermovie behind it. Three uploads
+       that behave identically, so they run through one helper rather than
+       three copies of it drifting apart. */
+    const heroUpload = async (field: string, slot: string): Promise<string> => {
+      let current = str(field);
+      const file = form.get(`${field}__file`);
+      const cleared = form.get(`${field}__clear`) != null;
+
+      if (file && typeof file === 'object' && (file as File).size > 0) {
+        try {
+          const saved = await save('pages', `${params.id}-${locale}`, slot, file as File);
+          if (current && current !== saved.path && isManaged(current)) orphaned.push(current);
+          return saved.path;
+        } catch (e) {
+          errors[field] = e instanceof UploadError ? e.message : 'Uploaden is niet gelukt.';
+          return current;
+        }
       }
-    } else if (heroCleared) {
-      if (heroImage && isManaged(heroImage)) orphaned.push(heroImage);
-      heroImage = '';
-    }
+      if (cleared) {
+        if (current && isManaged(current)) orphaned.push(current);
+        return '';
+      }
+      return current;
+    };
+
+    const heroImage = await heroUpload('hero_image', 'hero');
+    const heroVideoWebm = await heroUpload('hero_video_webm', 'hero-video-webm');
+    const heroVideoMp4 = await heroUpload('hero_video_mp4', 'hero-video-mp4');
 
     const navLabel = str('nav_label');
     if (!navLabel) errors.nav_label = 'Dit veld is verplicht.';
@@ -86,6 +99,8 @@ export const actions: Actions = {
           heroTitle,
           heroIntro: str('hero_intro'),
           heroImage: heroImage || null,
+          heroVideoWebm,
+          heroVideoMp4,
           heroVariant: str('hero_variant') || 'page',
           heroTrust: lines('hero_trust'),
           heroCtaLabel: str('hero_cta_label'),

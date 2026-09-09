@@ -213,16 +213,23 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       continue;
     }
 
-    if (attrs.includes('news-band')) {
+    /* The newsletter form, in either of the two layouts the site uses: the
+       narrow band most pages end on, and the two-column block where the copy
+       sits beside the field. Both are the same section type. */
+    if (attrs.includes('news-band') || inner.includes('two-col--form')) {
       sections.push({
         type: 'news_band',
         ground: 'white',
         anchor,
         content: {
+          running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
-          body: first(inner, /<p class="body">([\s\S]*?)<\/p>/)
+          headingStyle: headingStyleOf(inner),
+          body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
+          style: inner.includes('two-col--form') ? 'two_col' : 'band'
         }
       });
+
       continue;
     }
 
@@ -234,6 +241,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
           ctaLabel: first(inner, /<a class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/),
           ctaHref: (inner.match(/<a class="pill[^"]*"[^>]*href="([^"]+)"/) ?? [])[1] ?? ''
         }
@@ -265,6 +273,8 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           content: {
             running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
             heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+            headingStyle: headingStyleOf(inner),
+            lead: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
             style: routes ? 'routes' : 'layers',
             items
           }
@@ -301,7 +311,9 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
           lead: paras[0] ?? first(inner, /<p class="body">([\s\S]*?)<\/p>/),
+          note: first(inner, /<p class="(?:body note|note body)">([\s\S]*?)<\/p>/),
           lead2: paras[1] ?? '',
           ctaLabel: foot ? decode(foot[2]) : '',
           ctaHref: foot ? localise(foot[1]) : '',
@@ -335,6 +347,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
           body: first(inner, /<p class="body">([\s\S]*?)<\/p>/),
           word: first(inner, /<p class="reel-word"[^>]*>([\s\S]*?)<\/p>/),
           note: first(inner, /<p class="reel-note">([\s\S]*?)<\/p>/),
@@ -365,6 +378,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
           items
         }
       });
@@ -410,10 +424,16 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
             running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
             kicker: red ? `${plain} | ${red}` : plain,
             heading,
+            headingStyle: headingStyleOf(inner),
             intro: '',
             body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
             ticks: [],
-            image: '',
+            /* A plain two-col still often carries a picture in its other
+               column — the social-impact block on the homepage does. Reading
+               it here is the difference between that section having its image
+               and quietly losing it. */
+            image: (inner.match(/<img[^>]+src="([^"]+)"/) ?? [])[1] ?? '',
+            layout: 'plain',
             imageSide: 'right',
             ctaLabel: btns[0] ? decode(btns[0][2]) : '',
             ctaHref: btns[0] ? localise(btns[0][1]) : '',
@@ -437,10 +457,12 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
         content: {
           running: first(inner, /<span class="running">([\s\S]*?)<\/span>/),
           heading: first(inner, /<h2[^>]*>([\s\S]*?)<\/h2>/),
+          headingStyle: headingStyleOf(inner),
           intro: first(inner, /<p class="intro">([\s\S]*?)<\/p>/),
           body: first(inner, /<p class="body"[^>]*>([\s\S]*?)<\/p>/),
           ticks,
           image: imgSrc,
+          layout: 'media',
           imageSide: imageFirst ? 'left' : 'right',
           ctaLabel: first(inner, /<a href="[^"]*" class="pill[^"]*"[^>]*>([\s\S]*?)<\/a>/),
           ctaHref: (inner.match(/<a href="([^"]+)" class="pill/) ?? [])[1] ?? ''
@@ -454,6 +476,7 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
       const block = head ? head[0] : inner;
       const heading = first(block, /<h2[^>]*>([\s\S]*?)<\/h2>/);
       if (heading) {
+        const link = block.match(/<a href="([^"]+)" class="tlink">([\s\S]*?)<\/a>/);
         sections.push({
           type: 'sec_head',
           ground,
@@ -461,7 +484,14 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
           content: {
             running: first(block, /<span class="running">([\s\S]*?)<\/span>/),
             heading,
-            lead: first(block, /<p class="body">([\s\S]*?)<\/p>/)
+            headingStyle: headingStyleOf(block),
+            lead: first(block, /<p class="body">([\s\S]*?)<\/p>/),
+            /* The footnote under a list — the waiting-list caveat on the
+               homepage's events block. It sits outside .sec-head, so it is
+               read from the section rather than from the head. */
+            note: first(inner, /<p class="(?:body note|note body)">([\s\S]*?)<\/p>/),
+            ctaLabel: link ? decode(link[2]) : '',
+            ctaHref: link ? localise(link[1]) : ''
           }
         });
         continue;
@@ -498,6 +528,29 @@ function extractSections(html: string): { sections: Section[]; skipped: string[]
     // Genuinely bespoke markup with no section type behind it.
     const label = anchor ? `#${anchor}` : (heading || 'naamloze sectie');
     skipped.push(label.slice(0, 60));
+  }
+
+  /* The scrolling partner band sits BETWEEN the last </section> and the
+     footer — it is not inside a section at all, which is why the loop above
+     never sees it. The logos are partner records, so it is lifted as a
+     collection rather than as fixed markup: add a partner under Inhoud and the
+     band follows. */
+  if (html.includes('class="marquee')) {
+    const head = html.match(/<div class="mq-head">([\s\S]*?)<\/div>/);
+    sections.push({
+      type: 'collection',
+      ground: 'white',
+      anchor: '',
+      content: {
+        running: head ? first(head[1], /<span class="running">([\s\S]*?)<\/span>/) : '',
+        heading: '',
+        lead: '',
+        note: head ? first(head[1], /<span class="mq-note">([\s\S]*?)<\/span>/) : '',
+        source: 'partners',
+        presentation: 'marquee',
+        limit: ''
+      }
+    });
   }
 
   return { sections, skipped };
@@ -537,6 +590,19 @@ async function keepUploadedHero(
  * section straight after each, so the homepage shows real foundations, real
  * editions and real articles, all still edited in Inhoud.
  */
+/**
+ * The heading's own size modifier, if it has one.
+ *
+ * The site sizes a title to how long it is — d-l--60 through d-l--40 — and
+ * occasionally aligns it right. Dropping these on the way in is what turned
+ * differently weighted headings into one uniform size.
+ */
+function headingStyleOf(block: string): string {
+  const cls = (block.match(/<h2 class="([^"]*)"/) ?? [])[1] ?? '';
+  const mod = cls.split(/\s+/).find((c) => /^d-l--\d+$/.test(c) || c === 'align-right');
+  return mod ?? '';
+}
+
 function withHomeCollections(sections: Section[]): Section[] {
   const after: Record<string, { source: string; limit: string }> = {
     fundamenten: { source: 'foundations', limit: '' },
@@ -544,21 +610,24 @@ function withHomeCollections(sections: Section[]): Section[] {
     'journal-teaser': { source: 'journal', limit: '4' }
   };
 
-  const out: Section[] = [];
-  for (const section of sections) {
-    out.push(section);
+  return sections.map((section) => {
     const want = section.anchor ? after[section.anchor] : undefined;
     // The block may already have been lifted as a collection — the foundations
-    // strip is one — in which case adding another would render it twice.
-    if (!want || section.type === 'collection') continue;
-    out.push({
+    // strip is one — in which case converting it again would lose the strip.
+    if (!want || section.type === 'collection') return section;
+
+    /* The heading and its list are ONE <section> on the site, so the heading
+       is converted into the collection rather than a second section being
+       appended after it. Two sections meant two lots of section padding
+       between a heading and the cards it introduces, which is why the
+       homepage's vertical rhythm came out flat and evenly spaced instead of
+       grouping each heading with its content. */
+    return {
+      ...section,
       type: 'collection',
-      ground: section.ground === 'sand' ? 'sand' : 'white',
-      anchor: `${section.anchor}-lijst`,
-      content: { running: '', heading: '', lead: '', ...want }
-    });
-  }
-  return out;
+      content: { ...section.content, ...want }
+    };
+  });
 }
 
 

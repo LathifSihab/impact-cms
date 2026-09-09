@@ -31,7 +31,19 @@
 
 <header class={variantClass} data-reveal-root>
   {#if page.heroImage}
-    <Img src={page.heroImage} alt={page.heroTitle} role="wide" />
+    <!-- The still is also the poster. main.js reads data-video-webm off it,
+         probes that file, and only when it resolves — and prefers-reduced-motion
+         is not set — mounts a muted looping <video> over the hero. So a page
+         with no clip renders exactly as it does without these attributes. -->
+    <Img
+      src={page.heroImage}
+      alt={page.heroTitle}
+      role="wide"
+      sizes="100vw"
+      data-hero-poster=""
+      data-video-webm={page.heroVideoWebm ? imageUrl(page.heroVideoWebm) : undefined}
+      data-video-mp4={page.heroVideoMp4 ? imageUrl(page.heroVideoMp4) : undefined}
+    />
   {/if}
 
   <div class="hero-content wrap">

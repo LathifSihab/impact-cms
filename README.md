@@ -214,6 +214,50 @@ Translation is a fallback, not a pairing: the model stores one row per language,
 so an English page with no English row shows the Dutch text with English chrome.
 Fixing that properly is still the open item below.
 
+## The homepage's moving parts
+
+Three things on the homepage are driven by JavaScript, and all three are the
+static site's own scripts rather than reimplementations.
+
+**The preloader.** EXPERIENCES / CONNECTION / GROWTH, landing on [IMPACT] before
+the curtain opens. It runs once per session, decided by a boot script in
+`app.html` that must run before first paint — by the time a deferred script
+executes, the page is painted and the curtain would drop over content the
+visitor has already seen. `/admin` and `/login` are excluded: they share the
+shell but have no preloader markup, so the class there would only lock the
+scroll until the failsafe fires.
+
+**The hero aftermovie.** A page can carry an optional WebM and MP4 under its
+hero. The still stays the poster and `main.js` only mounts the video once the
+WebM actually resolves and `prefers-reduced-motion` is not set — so a page with
+no clip, a slow connection, or a visitor who asked for less motion all render
+the still, unchanged.
+
+**The reel.** See the section types below; `cinema.js` pins it and drives it
+from scroll position.
+
+GSAP is loaded only for the pages that need it — a page with no preloader to run
+and no reel to drive never downloads it.
+
+## Sections and vertical rhythm
+
+A section in the editor is one `<section>` on the page, and that is load-bearing:
+`.section` carries the page's vertical padding, so splitting a heading and the
+list it introduces into two sections puts a full section's padding between them.
+The site groups them — `#events` is one section holding both its `.sec-head` and
+its event rows — so the seed converts a heading into the collection beneath it
+rather than appending a second section after it.
+
+For the same reason the partner marquee is rendered without a section wrapper:
+it carries its own padding and its own top and bottom border, and on the static
+site it sits outside every `<section>`, between the last one and the footer.
+
+Two other things that read as spacing but are markup: a section title's size
+(`headingStyle` — the site sizes a title to its length, and a 60px heading
+dropped to the default changes the rhythm of the whole block), and whether a
+`media_text` uses `two-col--media`, which sizes the picture as a direct child.
+Both are fields rather than guesses, because both vary section by section.
+
 ## Images
 
 Image fields are uploads, not typed paths. Files are written to `cms/uploads/`,

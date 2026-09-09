@@ -23,6 +23,27 @@ export interface CollectionItem {
   bodyLong?: string;
   image?: string;
   href?: string;
+  /** Alt text where the record carries its own, rather than reusing the title. */
+  alt?: string;
+  /** Short labels beside an item — the age cards list the formats they feed. */
+  tags?: string[];
+  /* The event row is the one presentation that needs the record's own shape
+     rather than a flattened title/body, because the static markup puts each
+     part in its own element: two tags, a date, a place, an age range and a
+     status-dependent call to action. */
+  meta?: {
+    formatName?: string;
+    price?: string;
+    dateText?: string;
+    location?: string;
+    ageMin?: number | null;
+    ageMax?: number | null;
+    status?: string;
+    /** Journal card chip. */
+    category?: string;
+    /** Hosted formats are built with an external partner and link out. */
+    isHosted?: boolean;
+  };
 }
 
 type Row = Record<string, any>;
@@ -48,17 +69,32 @@ const SOURCES: Record<
   },
   formats: {
     table: 'formats',
-    select: 'id,name,bracket_name,description,meta,image,sort_order',
+    select: 'id,name,bracket_name,description,meta,image,is_hosted,sort_order',
     order: 'sort_order',
     asc: true,
-    map: (r) => ({ id: r.id, title: r.name, subtitle: r.meta, body: r.description, image: r.image })
+    map: (r) => ({
+      id: r.id,
+      title: r.bracket_name || r.name,
+      subtitle: r.meta,
+      body: r.description,
+      image: r.image,
+      meta: { isHosted: Boolean(r.is_hosted) }
+    })
   },
   age_groups: {
     table: 'age_groups',
-    select: 'id,label,tagline,body,image,sort_order',
+    select: 'id,label,tagline,body,image,alt,formats,sort_order',
     order: 'sort_order',
     asc: true,
-    map: (r) => ({ id: r.id, title: r.label, subtitle: r.tagline, body: r.body, image: r.image })
+    map: (r) => ({
+      id: r.id,
+      title: r.label,
+      subtitle: r.tagline,
+      body: r.body,
+      image: r.image,
+      alt: r.alt,
+      tags: Array.isArray(r.formats) ? r.formats.map(String) : []
+    })
   },
   tiers: {
     table: 'tiers',
@@ -100,7 +136,8 @@ const SOURCES: Record<
   },
   events: {
     table: 'events',
-    select: 'id,title,date_text,location,standfirst,hero_image,edition_year',
+    select:
+      'id,title,date_text,location,standfirst,hero_image,edition_year,price,status,age_min,age_max,formats(name)',
     order: 'edition_year',
     asc: false,
     map: (r) => ({
@@ -109,12 +146,21 @@ const SOURCES: Record<
       subtitle: `${r.date_text ?? ''} · ${r.location ?? ''}`,
       body: r.standfirst,
       image: r.hero_image,
-      href: `/events/${r.id}`
+      href: `/events/${r.id}`,
+      meta: {
+        formatName: r.formats?.name ?? '',
+        price: r.price ?? '',
+        dateText: r.date_text ?? '',
+        location: r.location ?? '',
+        ageMin: r.age_min ?? null,
+        ageMax: r.age_max ?? null,
+        status: r.status ?? ''
+      }
     })
   },
   journal: {
     table: 'journal',
-    select: 'id,title,category,meta,image,published_at',
+    select: 'id,title,category,meta,image,alt,published_at',
     order: 'published_at',
     asc: false,
     map: (r) => ({
@@ -122,7 +168,9 @@ const SOURCES: Record<
       title: r.title,
       subtitle: r.meta,
       image: r.image,
-      href: `/journal/${r.id}`
+      alt: r.alt,
+      href: `/journal/${r.id}`,
+      meta: { category: r.category ?? '' }
     })
   }
 };

@@ -28,6 +28,9 @@ export interface PageRecord {
   heroTitle: string;
   heroIntro: string;
   heroImage: string | null;
+  /** Optional aftermovie played over the hero still; main.js mounts it. */
+  heroVideoWebm: string;
+  heroVideoMp4: string;
   heroVariant: string;
   /** Reassurance items under the headline; the homepage uses these. */
   heroTrust: string[];
@@ -50,6 +53,9 @@ export interface PageInput {
   heroTitle: string;
   heroIntro: string;
   heroImage: string | null;
+  /** Optional aftermovie played over the hero still; main.js mounts it. */
+  heroVideoWebm: string;
+  heroVideoMp4: string;
   heroVariant: string;
   /** Reassurance items under the headline; the homepage uses these. */
   heroTrust: string[];

@@ -50,31 +50,42 @@
     };
     loadNext();
 
-    /* The scroll-driven reel, and only on a page that has one.
+    /* GSAP's two consumers: the preloader curtain and the scroll-driven reel.
      *
-     * cinema.js reads window.gsap and window.ScrollTrigger at call time and
-     * returns quietly when either is missing, so a blocked CDN costs the
-     * animation and nothing else: the clips stay in the track, scrollable and
-     * playable. Loading it unconditionally would put 70 kB of GSAP on every
-     * page for a section that only the homepage has. */
-    if (document.querySelector('[data-cinema]')) {
-      const cinema = [
-        'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js',
-        'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js',
-        '/assets/js/cinema.js'
-      ];
+     * Both are loaded on their own chain so they do not wait behind main.js,
+     * and both only when the page actually has them — the preloader runs once
+     * a session, the reel only exists on the homepage, and neither should cost
+     * every other page 70 kB of GSAP.
+     *
+     * Each reads its globals at call time and bails out quietly when they are
+     * missing, so a blocked CDN costs the animation and nothing else: the
+     * curtain is lifted by the failsafe in app.html, and the reel's clips stay
+     * scrollable and playable. */
+    const preloading = document.documentElement.classList.contains('is-preloading');
+    const cinema = Boolean(document.querySelector('[data-cinema]'));
+
+    if (preloading || cinema) {
+      const chain = ['https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js'];
+      // preloader.js first: the curtain is on screen and the visitor is waiting.
+      if (preloading) chain.push('/assets/js/preloader.js');
+      if (cinema) {
+        chain.push('https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js');
+        chain.push('/assets/js/cinema.js');
+      }
+
       let j = 0;
-      const loadCinema = () => {
-        if (j >= cinema.length) return;
+      const loadGsap = () => {
+        if (j >= chain.length) return;
         const el = document.createElement('script');
-        el.src = cinema[j++];
-        el.onload = loadCinema;
-        // ScrollTrigger must follow gsap, and cinema.js both — so a failure
-        // stops the chain rather than running a consumer without its plugin.
+        el.src = chain[j++];
+        el.onload = loadGsap;
+        /* Order is a real dependency here — ScrollTrigger needs gsap, and both
+           consumers need their plugin — so a failure stops the chain rather
+           than running a consumer without what it reads. */
         el.onerror = () => {};
         document.body.appendChild(el);
       };
-      loadCinema();
+      loadGsap();
     }
 
     // …and if it loaded but never ran (a throw partway through), catch that too.

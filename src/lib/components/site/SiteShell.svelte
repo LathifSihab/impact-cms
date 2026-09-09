@@ -121,6 +121,27 @@
   <link rel="stylesheet" href="/assets/css/style.css" />
 </svelte:head>
 
+<!-- The kinetic preloader: EXPERIENCES / CONNECTION / GROWTH, landing on
+     [IMPACT] before the curtain opens. Hidden by default — the boot script in
+     app.html adds .is-preloading, once per session, and that is the only thing
+     that reveals it. preloader.js drives it with GSAP and dispatches
+     impact:curtain, which main.js waits for so the headline plays as the
+     curtain opens rather than finishing behind it. -->
+<div class="pre" id="preloader" aria-hidden="true">
+  <div class="pre-panel pre-panel--top">
+    <div class="pre-word">
+      <span class="pre-cycle" data-pre-cycle>EXPERIENCES</span>
+      <span class="pre-final" data-pre-final><em>[</em>IMPACT<em>]</em></span>
+    </div>
+  </div>
+  <div class="pre-panel pre-panel--bot">
+    <div class="pre-word">
+      <span class="pre-cycle" data-pre-cycle>EXPERIENCES</span>
+      <span class="pre-final" data-pre-final><em>[</em>IMPACT<em>]</em></span>
+    </div>
+  </div>
+</div>
+
 <a class="skip-link" href="#main">{T.skip}</a>
 
 <!-- utility bar -->

@@ -161,6 +161,27 @@
               {#if errors.hero_image}<span class="err">{errors.hero_image}</span>{/if}
             </div>
           </div>
+          <div class="full">
+            <p class="hint" style="margin:6px 0 12px">
+              Optioneel: een aftermovie die over de hero-afbeelding speelt. De
+              afbeelding blijft het posterbeeld en draagt de hero tot de video
+              geladen is — en blijft staan bij <em>prefers-reduced-motion</em>
+              of op een trage verbinding. WebM speelt, MP4 is de terugval voor
+              Safari; zet ze allebei klaar.
+            </p>
+          </div>
+          <div class="grid2">
+            <div class="field" class:field--invalid={!!errors.hero_video_webm}>
+              <span class="lab">Hero-video (WebM)</span>
+              <ImageInput name="hero_video_webm" kind="video" value={p.heroVideoWebm ?? ''} />
+              {#if errors.hero_video_webm}<span class="err">{errors.hero_video_webm}</span>{/if}
+            </div>
+            <div class="field" class:field--invalid={!!errors.hero_video_mp4}>
+              <span class="lab">Hero-video (MP4)</span>
+              <ImageInput name="hero_video_mp4" kind="video" value={p.heroVideoMp4 ?? ''} />
+              {#if errors.hero_video_mp4}<span class="err">{errors.hero_video_mp4}</span>{/if}
+            </div>
+          </div>
         </div>
       </fieldset>
 

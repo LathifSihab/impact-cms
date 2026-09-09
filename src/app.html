@@ -12,12 +12,39 @@
       rel="stylesheet"
     />
     <script>
-      /* Transcribed from the static pages' own head script: `.js` is what the
-         stylesheet keys reveal-on-scroll off, and marking the preloader as seen
-         is what the site itself does, so it does not run here either. */
+      /* The static pages' own boot script, transcribed.
+         
+         It runs before first paint, which is the point: `.js` is what the
+         stylesheet keys the reveal-on-scroll start state off, and the decision
+         to run the preloader cannot wait for a deferred script — by then the
+         page has been painted and the curtain would drop over content the
+         visitor has already seen.
+
+         The backoffice is excluded. It shares this shell but has no preloader
+         markup, so `is-preloading` there would only lock the scroll until the
+         failsafe fires. */
       (function (d) {
-        d.documentElement.classList.add('js');
-        try { sessionStorage.setItem('hasSeenPreloader', '1'); } catch (e) {}
+        var h = d.documentElement;
+        h.classList.add('js');
+
+        var p = location.pathname;
+        if (p === '/admin' || p.indexOf('/admin/') === 0 || p.indexOf('/login') === 0) return;
+
+        try {
+          var seen = sessionStorage.getItem('hasSeenPreloader');
+          sessionStorage.setItem('hasSeenPreloader', '1');
+          if (!seen) {
+            h.classList.add('is-preloading');
+            /* If GSAP or preloader.js never arrives, the visitor is left looking
+               at a black screen with the scroll locked. This is the one
+               guarantee that cannot depend on either of them loading. */
+            window.__preFailsafe = setTimeout(function () {
+              h.classList.remove('is-preloading');
+            }, 3000);
+          }
+        } catch (e) {
+          /* storage blocked: no preloader, and nothing breaks */
+        }
       })(document);
     </script>
     %sveltekit.head%
