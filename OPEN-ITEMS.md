@@ -16,8 +16,8 @@ the live site and the production database, not recalled.
 | Images | 99 originals + 582 responsive variants, served from Supabase Storage |
 | Backoffice | live, guarded, one account |
 | Database | 19 migrations applied, fully seeded |
-| Dashboard tiers 1–4 | live; Plausible traffic waits on an API key (§6) |
-| Analytics | tracking live behind the consent banner |
+| Dashboard tiers 1–4 | live, including the embedded Plausible dashboard |
+| Analytics | live and verified in the page source; runs unconditionally (§6) |
 | Signup endpoint | in-house at `/api/subscribe`, receipts in Postgres |
 
 What follows is what is *not* finished, ordered by what actually costs you
@@ -194,82 +194,119 @@ required, and the basis for the two processors outside the EEA.
 
 ---
 
-## 6. Plausible — tracking is live, the Stats API needs one key
+## 6. Plausible — **done**, with one thing for the lawyers
 
-**Tracking is wired and collecting.** This was broken in a way nobody would have
-noticed: `analytics.js` is written to stay inert until a domain exists, and
-nothing ever gave it one — no meta tag, and the script was not even in the
-layout's load list. The site collected nothing, so a Stats API key would have
-reported on an empty account.
+Tracking is live and visible in the page source. It took two fixes, because it
+was broken twice over and neither failure said anything.
 
-Both meta tags are written from env now, and the script loads between
-`consent.js` and `main.js` so the goal queue is installed before `main.js` fires
-anything. It still waits for the **Statistics** category in the consent banner:
-loading analytics after someone chose "Necessary only" would make the banner a
-lie.
+**It was loading the wrong kind of script.** Plausible ships two formats. The
+classic one (`/js/script*.js`) is told which site it belongs to by a
+`data-domain` attribute. The newer one (`/js/pa-<id>.js`) has the site baked
+into the file — it contains no `data-domain` handling at all — and counts
+nothing until `plausible.init()` is called. Our loader was written for the
+first and given the second: it downloaded the script, set an attribute the
+script ignores, and never called `init()`. Not one event was ever sent.
 
-```
-PUBLIC_PLAUSIBLE_DOMAIN = demo-impact-cms.vercel.app
-PUBLIC_PLAUSIBLE_SRC    = https://plausible.io/js/pa-jko49HYqqZaXcl3mYEgRx.js
-```
+**It was invisible to Plausible's own checker.** The script was injected by
+JavaScript at runtime, so it never appeared in the page source — which is
+exactly where Plausible's verifier looks, and why the dashboard said "setup
+pending" and would have said so forever.
 
-> Check your Plausible dashboard lists the site as
-> `demo-impact-cms.vercel.app`. If it is registered under the Netlify domain
-> instead, change `PUBLIC_PLAUSIBLE_DOMAIN` to match — Plausible drops events
-> whose domain it does not recognise, silently.
+The snippet is now rendered server-side into `<head>`, verbatim. Verified on
+production: the `<script async src=…pa-…js>` tag and the `plausible.init()`
+call are both in the raw HTML, the script returns 200, and no CSP blocks it.
 
-**The dashboard's traffic panel still needs a separate credential.** The script
-you pasted is the *tracking* side; the *reading* side is an API key:
+**Everything is set:** `PUBLIC_PLAUSIBLE_DOMAIN`, `PUBLIC_PLAUSIBLE_SRC`,
+`PLAUSIBLE_API_KEY` and `PLAUSIBLE_SHARED_LINK` are all in Vercel production.
+The embedded dashboard lives at `/admin/bezoek`.
 
-1. Plausible → **Settings → API keys** → create one.
-2. Then:
-
-```powershell
-cd cms
-vercel env add PLAUSIBLE_API_KEY production --type secret --value "<key>" --force --yes
-vercel deploy --prod --yes
-```
-
-The Stats API is plan-gated. If it is not on your plan the panel says so
-specifically rather than showing an empty chart, and the attribution half of
-that panel keeps working regardless — it reads our own rows, not Plausible.
+> **For the lawyers — this changed the cookie banner.** Plausible now runs for
+> every visitor rather than waiting for consent, and the **Statistics** category
+> has been removed from the banner to match. Those two go together: a toggle
+> that gates nothing is theatre, and a gate with no toggle never opens. The
+> position is defensible — Plausible sets no cookies, stores nothing on the
+> device and anonymises IPs, so under GDPR/ePrivacy it generally needs no
+> consent — but it is a change to what the banner promises, so it belongs in
+> the §5 review. If they want it gated again, both halves reverse together;
+> the note is in `consent.js` and `analytics.js`.
 
 ---
 
-## 7. Page fidelity — 84.7%, and most of the rest should stay
+## 7. Page fidelity — 82.0%, and most of the rest should stay
 
 **Priority: low. Cosmetic, and partly deliberate.**
 
-Markup fidelity against the original static pages:
+Measured against production, not localhost. Two earlier numbers in this file
+were wrong for the same reason: the measuring script stripped Svelte's dev-mode
+`s-XXXX` scope classes but not production's `svelte-XXXX`, which understated
+every production page.
 
 | Page | Match |
 |---|---|
-| index.html | **100%** |
 | contact.html | 91% |
 | privacy.html | 87% |
+| index.html | 86% |
 | over.html | 85% |
-| hosted-experiences.html | 84% |
-| events.html | 82% |
-| media.html | 76% |
+| hosted-experiences.html | 85% |
+| journal.html | 83% |
+| events.html | 81% |
 | samenwerken.html | 77% |
+| media.html | 76% |
 | social-impact.html | 64% |
-| journal.html | 51% |
 
-**Roughly half the remaining gap is the CMS being correct, not wrong:**
+Two production-only gaps were found and closed since the last measurement:
+
+- **`#voor-jou` had lost its six route cards.** The homepage rendered
+  `<div class="routes">` empty. The row had been seeded before the step-card
+  extractor was fixed, so its items were never lifted. Repaired with
+  `npm run seed:pages -- --repair-rows`, which fills only lists that are empty
+  in the database and non-empty in the HTML — an empty list holds no edit, so
+  nothing anyone typed can be lost. A sweep found 21 empty lists in all; the
+  other 20 are empty in the source HTML too and are not defects.
+- **Six journal posts existed only as markup.** See below.
+
+**Roughly half of what is left is the CMS being correct, not wrong:**
 
 - **Consent gates.** `over.html` shows 8 expert cards; yours shows 0, because
-  nobody has confirmed. Media shows 4 clips; yours shows none. Items 4 above
-  closes most of this.
-- **Placeholder content.** `journal.html` has 9 cards against your 4 real posts —
-  the extras say *"door IMPACT aan te leveren"*. `06-CMS-SCOPE` is explicit:
-  do not invent placeholder content.
+  nobody has confirmed. Media shows 4 clips; yours shows none. Item §4 closes
+  most of this.
 - **Deliberate improvements.** The CMS renders `<picture>` where the static site
   has a bare `<img>` (that is the mobile work — 1.5 MB → 176 KB on the
   homepage), and real links where the static has dead `<article>` cards.
 
 **What is genuinely unfinished** is a handful of bespoke blocks on
-social-impact and journal. Say the word and I will take them, but tick the
+social-impact and media. Say the word and I will take them, but tick the
 consent boxes first — that moves more, for less work.
+
+### The journal — 49% → 83%
+
+`journal.html` shows ten posts. The handoff shipped four as Markdown; the other
+six were never written — their cards say *"door IMPACT aan te leveren"* — so
+they existed as a card and nothing else, and the CMS site showed four where the
+old site showed ten.
+
+The six are now in the database with everything their card states and an **empty
+body for IMPACT to write** in the backoffice. The article page renders fine
+without one: hero, image, date, related event, no prose. Nothing was invented —
+no titles, no copy, no images.
+
+Dates were the one field the cards do not carry, and `published_at` is required
+because it orders the feed. Each missing post was given a date interpolated from
+its neighbours on the page, which keeps the six in the page's order and leaves
+the four handoff dates untouched.
+
+> **This does not reproduce the page's exact card sequence, and cannot.** The
+> static grid runs oldest-first and features its *oldest* post; the CMS is a
+> newest-first feed. The four handoff posts already rendered in the reverse of
+> the static page before any of this. Matching exactly would mean rewriting the
+> handoff's own dates — a small change, but not one to make unasked.
+
+### The English journal is empty
+
+`site/en/journal.html` exists, but the `journal` table has **10 Dutch rows and
+zero English ones**, so the English journal falls back to the Dutch titles. The
+page-level English copy was lifted from `site/en` at seed time; the journal was
+not, because it is seeded from Markdown rather than from HTML. Not yet done.
 
 ---
 
@@ -294,10 +331,35 @@ alone so the seed stays a faithful copy of the source content.
 1. **§3** — confirm the Supabase Site URL saved. One glance.
 2. **§4** — tick the figures, experts and clip consent where the answers are
    yes. **This is the biggest visible change left**, it needs no deploy, and it
-   is what makes three empty blocks fill in.
-3. **§5** — send the privacy text to your lawyers. The long pole; start it early
-   even though it finishes late.
-4. **§6** — add the Plausible API key if the Stats API is on your plan.
-5. **§7** — the remaining fidelity, last, because most of it should not change.
+   is what makes three empty blocks fill in. Still 0 of 6 figures, 0 of 3
+   experts, 0 of 4 clips.
+3. **§5** — send the privacy text to your lawyers, including the Plausible
+   consent change in §6. The long pole; start it early even though it finishes
+   late.
+4. **§7** — the English journal, then the remaining bespoke blocks. Last,
+   because most of the rest should not change.
 
-§1 and §2 are done.
+§1, §2 and §6 are done.
+
+---
+
+## Not in the numbered list
+
+**Nothing is committed to git.** The changes from the Plausible and journal work
+are on disk only: `analytics.js`, `consent.js`, `SiteShell.svelte`,
+`seed-pages.ts` (new `--repair-rows` mode) and a new `scripts/journal-cards.ts`.
+Two things are in the way — the `D:\` drive is itself a git repository, so a
+`git` command run from the wrong directory operates on the drive root rather
+than this project; and the credential manager authenticates as `Lathif21`
+against `LathifSihab/impact-cms`, so pushes are rejected. Clearing it with
+`cmdkey /delete:git:https://github.com` and pushing again is the fix.
+
+**`npm run build` fails on Windows** with `EPERM: operation not permitted,
+symlink` from the Vercel adapter. It needs Developer Mode or an elevated shell
+to create symlinks. Harmless — Vercel builds on Linux, and the Vite compile
+itself succeeds — but it means the production build cannot be smoke-tested
+locally.
+
+**Three signup rows are in the database**, all with `brevo_ok: true`. If those
+are the test submissions rather than real people, they are worth clearing before
+handover so `/admin/signalen` starts from zero.
