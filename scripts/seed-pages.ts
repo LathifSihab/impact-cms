@@ -78,6 +78,16 @@ const db = createClient(url, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
+/* Repair mode. A full seed replaces every section, which throws away whatever
+   has been edited in the backoffice since. Some rows were seeded before the
+   row-extractors were fixed and their lists came out empty; those are the one
+   thing a full seed is not needed to correct, because an empty list holds no
+   edit to lose. With --repair-rows the extraction runs exactly as it would for
+   a seed, but the only thing written is a list that is empty in the database
+   and non-empty in the site. Everything else is left untouched. */
+const REPAIR_ROWS = process.argv.includes('--repair-rows');
+const DRY_RUN = process.argv.includes('--dry-run');
+
 /* --- the pages, in the order they belong in the backoffice ---------------- */
 
 const PAGES: { id: string; file: string; navLabel: string; heroVariant: string }[] = [
@@ -1179,6 +1189,71 @@ function restoreUploads(value: unknown, path: string, keep: Map<string, string>)
   return value;
 }
 
+/**
+ * Fill in lists that came out empty, and change nothing else.
+ *
+ * Stored rows are matched to freshly extracted ones by type and anchor in
+ * document order, not by position: a section added or removed in the
+ * backoffice shifts every position after it, while the pairing of "the second
+ * media_text without an anchor" to the same block in the HTML survives that.
+ * A row that cannot be paired is skipped rather than guessed at.
+ */
+async function repairRows(pageId: string, locale: string, extracted: Section[]): Promise<number> {
+  const { data: rows } = await db
+    .from('page_sections')
+    .select('id, position, type, anchor, content')
+    .eq('page_id', pageId)
+    .eq('locale', locale)
+    .order('position');
+
+  const pool = [...extracted];
+  let fixed = 0;
+
+  for (const row of (rows ?? []) as {
+    id: string;
+    position: number;
+    type: string;
+    anchor: string | null;
+    content: Record<string, unknown>;
+  }[]) {
+    const i = pool.findIndex(
+      (s) => s.type === row.type && (s.anchor ?? '') === (row.anchor ?? '')
+    );
+    if (i === -1) continue;
+    const [match] = pool.splice(i, 1);
+
+    /* Only keys that are an empty array here and a filled one there. Anything
+       else — text, images, a list that already has rows — is somebody's work. */
+    const patch: Record<string, unknown> = {};
+    for (const [key, stored] of Object.entries(row.content)) {
+      const lifted = match.content[key];
+      if (Array.isArray(stored) && stored.length === 0 && Array.isArray(lifted) && lifted.length) {
+        patch[key] = lifted;
+      }
+    }
+    if (!Object.keys(patch).length) continue;
+
+    const where = `${pageId}/${locale} #${row.anchor ?? ''} ${row.type}`;
+    const summary = Object.entries(patch)
+      .map(([k, v]) => `${k}: ${(v as unknown[]).length}`)
+      .join(', ');
+    console.log(`  ${DRY_RUN ? 'zou vullen' : 'gevuld'}  ${where.padEnd(42)} ${summary}`);
+
+    if (!DRY_RUN) {
+      const { error } = await db
+        .from('page_sections')
+        .update({ content: { ...row.content, ...patch } })
+        .eq('id', row.id);
+      if (error) {
+        console.error(`  ${where} FOUT — ${error.message}`);
+        return fixed;
+      }
+    }
+    fixed++;
+  }
+  return fixed;
+}
+
 /* --- run ------------------------------------------------------------------ */
 
 /* Load the real format names before lifting anything, so .format-row blocks
@@ -1228,6 +1303,11 @@ for (const [i, page] of PAGES.entries()) {
   const lifted = page.id === 'home' ? withHomeCollections(extracted.sections) : extracted.sections;
   const sections = await keepSectionImages(page.id, locale, lifted);
   const skipped = extracted.skipped;
+
+  if (REPAIR_ROWS) {
+    await repairRows(page.id, locale, sections);
+    continue;
+  }
 
   const seo = {
     title: first(html, /<title>([\s\S]*?)<\/title>/),
@@ -1291,6 +1371,14 @@ for (const [i, page] of PAGES.entries()) {
  }
 }
 
+if (REPAIR_ROWS) {
+  console.log(
+    DRY_RUN
+      ? '\nProefrun. Niets geschreven.\n'
+      : '\nKlaar. Alleen lege lijsten zijn gevuld; de rest staat zoals het stond.\n'
+  );
+  process.exit(0);
+}
 
 /* --- events and journal ---------------------------------------------------
  *
