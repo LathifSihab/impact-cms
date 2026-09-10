@@ -1,75 +1,37 @@
-/* Plausible, behind the consent banner.
+/* Section-engagement events for Plausible.
  *
- * Inert until a domain exists. The build writes <meta name="plausible-domain">
- * from PUBLIC_PLAUSIBLE_DOMAIN; with no domain this file loads nothing and costs
- * one meta lookup. So it can ship before the account does, and the account
- * turning up is a one-variable change rather than a code change.
+ * Plausible itself is loaded by the snippet in the server-rendered <head> (see
+ * SiteShell.svelte). It has to be there rather than here: Plausible's own
+ * integration check reads the raw HTML and cannot see a script that JavaScript
+ * added, and the pa-*.js format counts nothing until plausible.init() runs.
+ * This file used to do that loading, set data-domain — which pa-*.js ignores
+ * entirely — and never called init(), so not one event was ever sent.
  *
- * Why gated, when Plausible sets no cookies and legally needs no consent: we
- * show a banner that offers a Statistics category. Loading analytics after
- * somebody chose "Necessary only" would make that banner a lie. If IMPACT's
- * lawyer would rather it ran unconditionally — a defensible position for a
- * cookieless, IP-anonymising tool — drop the whenGranted wrapper and remove the
- * category from consent.js. Do both or neither.
+ * What is left here is the part stock Plausible does not answer. The brief asks
+ * for "page/section engagement": Plausible counts pageviews, not whether anyone
+ * reached the part of the page that matters. One event per section, once per
+ * pageview, when it has been properly seen rather than merely scrolled past.
  *
- * The queue below matters more than it looks. main.js fires goals the moment
- * they happen, and consent may arrive seconds later or never. Without it, every
- * conversion before the visitor clicks "Accept" is lost — which is most of them,
- * because people scroll first and answer the banner afterwards.
+ * Not gated behind the consent banner, and neither is the snippet. Plausible
+ * sets no cookies, stores nothing on the device and anonymises IPs, so there is
+ * no permission to ask for — and the Statistics category has been removed from
+ * consent.js to match. If IMPACT's lawyers would rather it were gated, both
+ * changes reverse together: re-add the category AND wrap the snippet. Doing one
+ * without the other either makes the banner a lie or asks about nothing.
  */
 (function () {
   'use strict';
 
+  /* No account configured means no snippet in the head, so there is nothing for
+     these events to reach. */
   var meta = document.querySelector('meta[name="plausible-domain"]');
-  var domain = meta && meta.getAttribute('content');
-  if (!domain) return;                       // no account yet: do nothing at all
+  if (!meta || !meta.getAttribute('content')) return;
 
-  var src = (document.querySelector('meta[name="plausible-src"]') || {}).content ||
-            'https://plausible.io/js/script.outbound-links.js';
+  /* The snippet defines window.plausible as a queue before the real script
+     arrives, so calling it early is safe and nothing is lost. Guarded anyway in
+     case the head snippet is ever removed without this file going with it. */
+  if (typeof window.plausible !== 'function') return;
 
-  var queue = [];
-  var live = false;
-
-  /* Stand in for plausible() until the real one loads, so nothing fires into a
-     void. Plausible's own snippet does this too; ours also has to survive the
-     window where consent has not been given yet. */
-  window.plausible = window.plausible || function () {
-    if (live) return;                        // the real one has taken over
-    queue.push(arguments);
-    if (queue.length > 40) queue.shift();    // a session cannot be unbounded
-  };
-
-  function load() {
-    if (live) return;
-    live = true;
-    var s = document.createElement('script');
-    s.defer = true;
-    s.setAttribute('data-domain', domain);
-    s.src = src;
-    s.addEventListener('load', function () {
-      // hand the backlog to the real implementation
-      queue.forEach(function (args) {
-        try { window.plausible.apply(null, args); } catch (e) { /* one bad call */ }
-      });
-      queue = [];
-    });
-    s.addEventListener('error', function () { live = false; });
-    document.head.appendChild(s);
-  }
-
-  if (window.impactConsent && window.impactConsent.whenGranted) {
-    window.impactConsent.whenGranted('analytics', load);
-  } else {
-    // consent.js absent or failed: do not load. Failing closed is the only safe
-    // direction when the thing that asks permission is the thing that is missing.
-    return;
-  }
-
-  /* ---- section engagement ----
-     The brief asks for "page/section engagement", which stock Plausible does not
-     answer: it counts pageviews, not whether anyone reached the part of the page
-     that matters. One event per section, once per pageview, when it has been
-     properly seen rather than merely scrolled past. */
   if (!('IntersectionObserver' in window)) return;
 
   var sections = document.querySelectorAll('section[id], header[id]');

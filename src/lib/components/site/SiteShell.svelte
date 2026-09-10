@@ -16,7 +16,25 @@
   import { env } from '$env/dynamic/public';
 
   const plausibleDomain = env.PUBLIC_PLAUSIBLE_DOMAIN ?? '';
-  const plausibleSrc = env.PUBLIC_PLAUSIBLE_SRC ?? '';
+
+  /* The script URL is written into the page as raw HTML below, so it is checked
+     rather than trusted. A mistyped environment variable should fail to load a
+     tracker, not put arbitrary markup in every page's <head>. Only Plausible's
+     own https URLs get through. */
+  const plausibleSrc = (() => {
+    const raw = (env.PUBLIC_PLAUSIBLE_SRC ?? '').trim();
+    if (!raw) return '';
+    try {
+      const u = new URL(raw);
+      const host = u.hostname.toLowerCase();
+      if (u.protocol !== 'https:') return '';
+      if (host !== 'plausible.io' && !host.endsWith('.plausible.io')) return '';
+      if (!u.pathname.startsWith('/js/')) return '';
+      return u.toString();
+    } catch {
+      return '';
+    }
+  })();
 
   let {
     locale,
@@ -127,13 +145,31 @@
 <svelte:head>
   <link rel="stylesheet" href="/assets/css/style.css" />
   {#if plausibleDomain}
-    <!-- analytics.js reads these and does nothing without them, so the account
-         turning up is a variable change rather than a code change. It still
-         waits for the Statistics category in the consent banner: loading
-         analytics after someone chose "Necessary only" would make the banner a
-         lie. -->
+    <!-- Plausible, in the server-rendered head rather than injected later.
+
+         Two reasons it has to be here. Plausible's own integration check reads
+         the raw HTML, so a script added by JavaScript is invisible to it and
+         the dashboard says "setup pending" forever. And the newer script format
+         counts nothing until plausible.init() runs, which the snippet below
+         does directly.
+
+         It is not behind the consent banner. Plausible sets no cookies, stores
+         nothing on the device and anonymises IPs, so there is nothing to ask
+         permission for — and the Statistics category has been removed from the
+         banner to match. Those two go together; re-gating one without the other
+         either makes the banner a lie or asks about nothing. Flagged for legal
+         review in the privacy text.
+
+         The domain is baked into pa-*.js by Plausible, so the meta tags below
+         are no longer what points at the account — they remain because
+         analytics.js reads plausible-domain to decide whether to emit section
+         events at all. -->
     <meta name="plausible-domain" content={plausibleDomain} />
     {#if plausibleSrc}<meta name="plausible-src" content={plausibleSrc} />{/if}
+    {#if plausibleSrc}
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+      {@html `<script async src="${plausibleSrc}"><\/script><script>window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};plausible.init()<\/script>`}
+    {/if}
   {/if}
 </svelte:head>
 

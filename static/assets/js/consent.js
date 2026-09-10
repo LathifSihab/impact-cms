@@ -7,14 +7,18 @@
  * banner appears on the next page load and the gating below starts applying,
  * with no further work and nothing to remember on the day.
  *
- * To switch on privacy-friendly analytics:
+ * To put a category behind the banner:
  *
- *   1. add 'analytics' to USES
- *   2. wherever the tracker is loaded, wrap it:
- *        window.impactConsent.whenGranted('analytics', function () { ...load... });
+ *   1. add it to USES (the Dutch and English copy for it is already below)
+ *   2. wherever the thing is loaded, wrap it:
+ *        window.impactConsent.whenGranted('<category>', function () { ...load... });
  *
- * The same applies to 'embeds' for anything third-party that stores state — a
- * hosted checkout, a video embed, a social feed.
+ * Both steps or neither. A category in USES with nothing gated behind it asks
+ * permission for nothing; a gate with no category never opens.
+ *
+ * This applies to 'embeds' for anything third-party that stores state — a
+ * hosted checkout, a video embed, a social feed. It does NOT apply to
+ * Plausible, which stores nothing and runs unconditionally; see USES below.
  *
  * What is deliberately NOT gated: the preloader's sessionStorage flag and the
  * newsletter dome's "don't show me again" value. Both are strictly necessary
@@ -29,11 +33,18 @@
      offering it as a choice would be theatre. It is shown in the preferences
      panel as permanently on, which is the honest way to present it.
 
-     Nothing sets an analytics or marketing cookie *yet* — see the note in the
-     banner copy. The categories are live so the gates exist before the trackers
-     do: whatever is added later is covered by a choice the visitor has already
-     made, rather than appearing behind their back and needing a second ask. */
-  var USES = ['analytics', 'marketing'];
+     'analytics' is deliberately NOT here. Plausible runs unconditionally: it
+     sets no cookies, stores nothing on the device and anonymises IPs, so there
+     is no permission to ask for, and a Statistics toggle that gated nothing
+     would be theatre. If legal review decides otherwise, this category and the
+     gate around the snippet in SiteShell.svelte come back together — one
+     without the other either makes the banner a lie or asks about nothing.
+
+     'marketing' stays: the box-office embed is third-party and does store
+     state. The gate exists before the tracker does, so whatever is added later
+     is covered by a choice the visitor has already made rather than appearing
+     behind their back and needing a second ask. */
+  var USES = ['marketing'];
 
   var KEY = 'impact.consent';
   var VERSION = 1;                 // bump to re-ask after a material change
